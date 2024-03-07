@@ -826,7 +826,7 @@ def priority_search(query, relevant_docs, bedrock_embedding, minSimilarity):
 
     return docs
 
-def get_reference(docs, rag_type, path, doc_prefix):
+def get_reference(docs):
     reference = "\n\nFrom\n"
     for i, doc in enumerate(docs):
         if doc['metadata']['translated_excerpt']:
@@ -836,20 +836,27 @@ def get_reference(docs, rag_type, path, doc_prefix):
             
         excerpt = excerpt.replace('\n','\\n')            
                 
-        print(f'## Document(get_reference) {i+1}: {doc}')
+        if doc['rag_type'][:10] == 'opensearch':
+            print(f'## Document(get_reference) {i+1}: {doc}')
                 
-        page = ""
-        if "document_attributes" in doc['metadata']:
-            if "_excerpt_page_number" in doc['metadata']['document_attributes']:
-                page = doc['metadata']['document_attributes']['_excerpt_page_number']
-        uri = doc['metadata']['source']
-        name = doc['metadata']['title']
+            page = ""
+            if "document_attributes" in doc['metadata']:
+                if "_excerpt_page_number" in doc['metadata']['document_attributes']:
+                    page = doc['metadata']['document_attributes']['_excerpt_page_number']
+            uri = doc['metadata']['source']
+            name = doc['metadata']['title']
+            #print('opensearch page: ', page)
 
-        #print('opensearch page: ', page)
-
-        if page:                
-            reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {doc['rag_type']} ({doc['assessed_score']})\n"
-        else:
+            if page:                
+                reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {doc['rag_type']} ({doc['assessed_score']})\n"
+            else:
+                reference = reference + f"{i+1}. <a href={uri} target=_blank>{name}</a>, {doc['rag_type']} ({doc['assessed_score']}), <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
+                    
+        elif doc['rag_type'] == 'search': # google search
+            print(f'## Document(get_reference) {i+1}: {doc}')
+                
+            uri = doc['metadata']['source']
+            name = doc['metadata']['title']
             reference = reference + f"{i+1}. <a href={uri} target=_blank>{name}</a>, {doc['rag_type']} ({doc['assessed_score']}), <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
                            
     return reference
@@ -1058,7 +1065,7 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
             raise Exception ("Not able to request to LLM")    
 
         if len(selected_relevant_docs)>=1 and enableReference=='true':
-            reference = get_reference(selected_relevant_docs, rag_type, path, doc_prefix)  
+            reference = get_reference(selected_relevant_docs)  
 
         end_time_for_inference = time.time()
         time_for_inference = end_time_for_inference - end_time_for_priority_search
