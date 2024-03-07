@@ -7,7 +7,7 @@
 
 ## Claude3 API
 
-Claude3부터는 Langchain의 [Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 더이상 사용할 수 없고, [BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 사용하여야 합니다. 
+Claude3부터는 Langchain의 [Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 더이상 사용할 수 없고, [BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 사용하여야 합니다. Parameter의 경우에 max_tokens_to_sample이 max_tokens로 변경되었습니다.
 
 ```python
 import boto3
