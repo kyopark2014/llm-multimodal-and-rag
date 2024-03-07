@@ -32,75 +32,6 @@ from langchain.schema import BaseMessage
 from langchain_community.chat_models import BedrockChat
 from langchain_core.messages import HumanMessage
 
-claude3_sonnet = [
-  {
-    "bedrock_region": "us-west-2", # Oregon
-    "model_type": "claude3",
-    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",   
-    "maxOutputTokens": "8196"
-  },
-  {
-    "bedrock_region": "us-east-1", # N.Virginia
-    "model_type": "claude3",
-    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
-    "maxOutputTokens": "8196"
-  }
-];
-
-claude_instant = [
-  {
-    "bedrock_region": "us-west-2", # Oregon
-    "model_type": "claude",
-    "model_id": "anthropic.claude-instant-v1",
-    "maxOutputTokens": "8196"
-  },
-  {
-    "bedrock_region": "us-east-1", # N.Virginia
-    "model_type": "claude",
-    "model_id": "anthropic.claude-instant-v1",
-    "maxOutputTokens": "8196"
-  },
-  {
-    "bedrock_region": "ap-northeast-1", # Tokyo
-    "model_type": "claude",
-    "model_id": "anthropic.claude-instant-v1",
-    "maxOutputTokens": "8196"
-  },    
-  {
-    "bedrock_region": "eu-central-1", # Europe (Frankfurt)
-    "model_type": "claude",
-    "model_id": "anthropic.claude-instant-v1",
-    "maxOutputTokens": "8196"
-    },
-]
-
-claude2 = [
-  {
-    "bedrock_region": "us-west-2", # Oregon
-    "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",   
-    "maxOutputTokens": "8196"
-  },
-  {
-    "bedrock_region": "us-east-1", # N.Virginia
-    "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",
-    "maxOutputTokens": "8196"
-  },
-  {
-    "bedrock_region": "us-northeast-1", # Tokyo
-    "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",
-    "maxOutputTokens": "8196"
-  },
-  {
-    "bedrock_region": "eu-central-1", # Europe (Frankfurt)
-    "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",
-    "maxOutputTokens": "8196"
-  }
-]
-
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
@@ -151,33 +82,6 @@ print('connection_url: ', connection_url)
 
 HUMAN_PROMPT = "\n\nHuman:"
 AI_PROMPT = "\n\nAssistant:"
-def get_parameter(model_type, maxOutputTokens):
-    """
-    if model_type=='claude3':
-        return {
-            "max_tokens":maxOutputTokens,     
-            "temperature":0.1,
-            "top_k":250,
-            "top_p":0.9,
-            "stop_sequences": [HUMAN_PROMPT]            
-        }
-    elif model_type=='claude':
-        return {
-            "max_tokens_to_sample":maxOutputTokens, # 8k    
-            "temperature":0.1,
-            "top_k":250,
-            "top_p":0.9,
-            "stop_sequences": [HUMAN_PROMPT]            
-        }
-    """
-    return {
-            "max_tokens":maxOutputTokens,     
-            "temperature":0.1,
-            "top_k":250,
-            "top_p":0.9,
-            "stop_sequences": [HUMAN_PROMPT]            
-        }
-
 
 map_chain = dict() # For RAG
 map_chat = dict() # For general conversation  
@@ -188,9 +92,8 @@ def get_llm(profile_of_LLMs, selected_LLM):
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    
-    model_type = profile['model_type']
-    
+    maxOutputTokens = int(profile['maxOutputTokens'])
+                          
     # bedrock   
     boto3_bedrock = boto3.client(
         service_name='bedrock-runtime',
@@ -201,7 +104,13 @@ def get_llm(profile_of_LLMs, selected_LLM):
             }            
         )
     )
-    parameters = get_parameter(profile['model_type'], int(profile['maxOutputTokens']))
+    parameters = {
+        "max_tokens":maxOutputTokens,     
+        "temperature":0.1,
+        "top_k":250,
+        "top_p":0.9,
+        "stop_sequences": [HUMAN_PROMPT]
+    }
     # print('parameters: ', parameters)
 
     llm = BedrockChat(
@@ -210,27 +119,7 @@ def get_llm(profile_of_LLMs, selected_LLM):
         streaming=True,
         callbacks=[StreamingStdOutCallbackHandler()],
         model_kwargs=parameters,
-    )
-    
-    """
-    if model_type == 'claude3':
-        llm = BedrockChat(
-            model_id=modelId,
-            client=boto3_bedrock, 
-            streaming=True,
-            callbacks=[StreamingStdOutCallbackHandler()],
-            model_kwargs=parameters,
-        )
-    else:
-        # langchain for bedrock
-        llm = Bedrock(
-            model_id=modelId, 
-            client=boto3_bedrock, 
-            streaming=True,
-            callbacks=[StreamingStdOutCallbackHandler()],
-            model_kwargs=parameters)
-    """
-        
+    )        
     return llm
 
 def get_embedding(profile_of_LLMs, selected_LLM):
@@ -325,9 +214,6 @@ def get_prompt_template(query, conv_type, rag_type):
             Assistant:"""
 
         elif conv_type=='qa':  
-            # for RAG, context and question
-            #prompt_template = """\n\nHuman: 다음의 참고자료(<context>)를 참조하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
-            #prompt_template = """\n\nHuman: 참고자료로 부터 구체적인 세부 정보를 충분히 제공합니다. 참고자료는 <context></context> XML tags안에 있습니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
             prompt_template = """\n\nHuman: 다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
             
             <context>
@@ -615,9 +501,6 @@ def get_prompt_template(query, conv_type, rag_type):
             Human: {input}
 
             Assistant:"""
-
-            # Use the following pieces of context to provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer. 
-            # The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
     
     return PromptTemplate.from_template(prompt_template)
 
@@ -723,17 +606,6 @@ def get_summary(llm, texts):
     print('word_kor: ', word_kor)
     
     if word_kor:
-        #prompt_template = """\n\nHuman: 다음 텍스트를 간결하게 요약하세오. 텍스트의 요점을 다루는 글머리 기호로 응답을 반환합니다.
-        #prompt_template = """\n\nHuman: 아래 <text>는 문서에서 추출한 텍스트입니다. 친절한 AI Assistant로서 아래와 같이 정리해주세요.
-        
-        #- 50자 미안의 제목을 <title>Name: </title> 안에 넣을것
-        #- 300자 미안의 설명을 <description>설명: </description> 안에 넣을것
-        #- 500자 미만의 내용 요약을 <summarization>요약: </summarization> 안에 넣을것
-        #- 10자 미안의 애용과 과련된 테그 5개를 <tag></tag> 테그 안에 생성할 것
-
-        #모든 생성 결과는 한국어로 해주세요. 결과에 개행문자인 "\m"과 글자 수와 같은 부가정보는 절대 포함하지 마세요.
-        #생성이 어렵거나 해당 내용을 모르는 경우 "None"로 결과를 생성하세요.
-
         prompt_template = """\n\nHuman: 다음 텍스트를 요약해서 500자 이내로 설명하세오.
         
         <text>
@@ -852,16 +724,6 @@ def get_revised_question(llm, connectionId, requestId, query):
     print('word_kor: ', word_kor)
 
     if word_kor and word_kor != 'None':
-        #condense_template = """{chat_history}
-
-        #Human: 이전 대화와 다음의 <question>을 이용하여, 새로운 질문을 생성하여 질문만 전달합니다.
-
-        #<question>            
-        #{question}
-        #</question>
-            
-        #Assistant: 새로운 질문:"""
-
         condense_template = """
         <history>
         {chat_history}
@@ -875,17 +737,6 @@ def get_revised_question(llm, connectionId, requestId, query):
             
         Assistant: 새로운 질문:"""
     else: 
-        #condense_template = """{chat_history}    
-        #Answer only with the new question.
-
-        #Human: How would you ask the question considering the previous conversation: {question}
-
-        #Assistant: Standalone question:"""
-
-
-        #Given the following <history> and a follow up question, rephrase the follow up question to be a standalone question, in its original language. Answer only with the new question.
-
-
         condense_template = """
         <history>
         {chat_history}
@@ -899,8 +750,6 @@ def get_revised_question(llm, connectionId, requestId, query):
         </question>
 
         Assistant: Standalone question:"""
-
-        #Given the following <history> and a follow up question, rephrase the follow up question to be a standalone question, in its original language. Answer only with the new question, in its original language. Answer only with the new question.
 
     print('condense_template: ', condense_template)
 
@@ -1282,6 +1131,25 @@ def get_answer_from_PROMPT(llm, text, conv_type, connectionId, requestId):
     
     return msg
 
+def get_profile(function_type):
+    claude3_sonnet = json.loads(os.environ.get('claude3_sonnet'))
+    claude2 = json.loads(os.environ.get('claude2'))
+    claude_instant = json.loads(os.environ.get('claude_instant'))
+
+    if function_type == 'normal-claude3':
+        profile_of_LLMs = claude3_sonnet
+    elif function_type == 'normal-claude2':
+        profile_of_LLMs = claude2
+    elif function_type == 'normal-claude_instant':
+        profile_of_LLMs = claude_instant
+    else:
+        profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
+    
+    if selected_LLM >= len(profile_of_LLMs)-1:
+        selected_LLM = 0
+        
+    return profile_of_LLMs
+
 def getResponse(connectionId, jsonBody):
     userId  = jsonBody['user_id']
     # print('userId: ', userId)
@@ -1306,19 +1174,9 @@ def getResponse(connectionId, jsonBody):
 
     global enableReference
     global map_chain, map_chat, memory_chat, memory_chain, debugMessageMode, selected_LLM, allowDualSearch
-    
-    if function_type == 'normal-claude3':
-        profile_of_LLMs = claude3_sonnet
-        selected_LLM = 0
-    elif function_type == 'normal-claude2':
-        profile_of_LLMs = claude2
-        selected_LLM = 0
-    elif function_type == 'normal-claude_instant':
-        profile_of_LLMs = claude_instant
-        selected_LLM = 0
-    else:
-        profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
-
+        
+    profile_of_LLMs = get_profile(function_type)
+            
     # Multi-region LLM
     profile = profile_of_LLMs[selected_LLM]
     bedrock_region =  profile['bedrock_region']
@@ -1400,14 +1258,6 @@ def getResponse(connectionId, jsonBody):
                 isControlMsg = True
                 debugMessageMode = 'false'
                 msg  = "Debug messages will not be delivered to the client."
-            elif text == 'enableDualSearch':
-                isControlMsg = True
-                allowDualSearch = 'true'
-                msg  = "Dual Search is enabled"
-            elif text == 'disableDualSearch':
-                isControlMsg = True
-                allowDualSearch = 'false'
-                msg  = "Dual Search is disabled"
 
             elif text == 'clearMemory':
                 memory_chain.clear()
@@ -1510,7 +1360,7 @@ def getResponse(connectionId, jsonBody):
             raise Exception ("Not able to write into dynamodb")        
         #print('resp, ', resp)
 
-    if debugMessageMode=='true': # other cases
+    if debugMessageMode=='true' and isControlMsg==False: 
         statusMsg = f"\n[통계]\nRegion: {bedrock_region}\nModelId: {modelId}\n"
         if token_counter_input:
             statusMsg = statusMsg + f"Question: {str(len(text))}자 / {token_counter_input}토큰\nAnswer: {str(len(msg))}자 / {token_counter_output}토큰\n"
@@ -1524,7 +1374,7 @@ def getResponse(connectionId, jsonBody):
         statusMsg = statusMsg + f"{elapsed_time:.2f}(전체)"
             
         sendResultMessage(connectionId, requestId, msg+statusMsg)
-        
+
     if selected_LLM >= len(profile_of_LLMs)-1:
         selected_LLM = 0
     else:

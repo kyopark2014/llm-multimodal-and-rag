@@ -560,7 +560,10 @@ export class CdkLlmClaude3Stack extends cdk.Stack {
         debugMessageMode: debugMessageMode,
         useParallelRAG: useParallelRAG,
         numberOfRelevantDocs: numberOfRelevantDocs,
-        profile_of_LLMs:JSON.stringify(profile_of_LLMs),
+        profile_of_LLMs: JSON.stringify(profile_of_LLMs),
+        claude3_sonnet: JSON.stringify(claude3_sonnet),
+        claude2: JSON.stringify(claude2),
+        claude_instant: JSON.stringify(claude_instant),
         googleApiSecret: googleApiSecret.secretName,
       }
     });     
