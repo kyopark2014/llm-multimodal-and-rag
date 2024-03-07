@@ -251,15 +251,26 @@ def general_conversation(chat, conversation, query):
     prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
     print('prompt: ', prompt)
     
-    chain = prompt | chat
+    #chat_history = extract_chat_history_from_memory()
+    #print('chat_history: ', chat_history)
     
-    chat_history = extract_chat_history_from_memory()
-    print('chat_history: ', chat_history)
+    from langchain_core.messages import AIMessage, HumanMessage
+
+    human_message = HumanMessage(content="What is the best way to learn programming?")
+    ai_message = AIMessage(
+        content="""\
+    1. Choose a programming language: Decide on a programming language that you want to learn.
+
+    2. Start with the basics: Familiarize yourself with the basic programming concepts such as variables, data types and control structures.
+
+    3. Practice, practice, practice: The best way to learn programming is through hands-on experience\
+    """
+    )
         
     chain = prompt | chat
     result = chain.invoke(
         {
-            "history": chat_history,
+            "history": [human_message, ai_message],
             "input": query,
         }
     )
