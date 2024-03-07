@@ -317,6 +317,150 @@ def general_conversation(connectionId, requestId, chat, query):
     
     return msg
 
+def revise_question(connectionId, requestId, chat, query):    
+    global time_for_inference, history_length, token_counter_history    
+    time_for_inference = history_length = token_counter_history = 0
+    
+    if debugMessageMode == 'true':  
+        start_time_for_inference = time.time()
+    
+    if isKorean(query)==True :
+        system = (
+            "다음은 Human과 Assistant의 대화입니다."
+        )
+        human = """이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 
+            <question>            
+            {question}
+            </question>
+            새로운 질문:"""
+    else: 
+        system = (
+            "using <history>, "
+        )
+        human = """rephrase the follow up <question> to be a standalone question.
+            <question>            
+            {question}
+            </question>
+            Standalone question:"""
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
+    print('prompt: ', prompt)
+    
+    history = memory_chain.load_memory_variables({})["chat_history"]
+    print('memory_chain: ', history)
+                
+    chain = prompt | chat
+    
+    try: 
+        stream = chain.invoke(
+            {
+                "history": history,
+                "question": query,
+            }
+        )
+        revised_question = stream.content                            
+        print('revised_question: ', revised_question)
+        
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)        
+            
+        sendErrorMessage(connectionId, requestId, err_msg)    
+        raise Exception ("Not able to request to LLM")
+
+    if debugMessageMode == 'true':  
+        chat_history = ""
+        for dialogue_turn in history:
+            #print('type: ', dialogue_turn.type)
+            #print('content: ', dialogue_turn.content)
+            
+            dialog = f"{dialogue_turn.type}: {dialogue_turn.content}\n"            
+            chat_history = chat_history + dialog
+                
+        history_length = len(chat_history)
+        print('chat_history length: ', history_length)
+        
+        token_counter_history = 0
+        if chat_history:
+            token_counter_history = chat.get_num_tokens(chat_history)
+            print('token_size of history: ', token_counter_history)
+            
+        sendDebugMessage(connectionId, requestId, f"새로운 질문: {revised_question}\n * 대화이력({str(history_length)}자, {token_counter_history} Tokens)을 활용하였습니다.")
+        
+        end_time_for_inference = time.time()
+        time_for_inference = end_time_for_inference - start_time_for_inference
+    
+    return revised_question    
+    # return revised_question.replace("\n"," ")
+
+
+def qa_using_RAG(connectionId, requestId, chat, query):
+    start_time_for_revise = time.time()
+
+    revised_question = revise_question(connectionId, requestId, chat, query)     
+    print('revised_question: ', revised_question)
+
+    end_time_for_revise = time.time()
+    time_for_revise = end_time_for_revise - start_time_for_revise
+    print('processing time for revised question: ', time_for_revise)
+    
+    global time_for_inference, history_length, token_counter_history    
+    time_for_inference = history_length = token_counter_history = 0
+    
+    if debugMessageMode == 'true':  
+        start_time_for_inference = time.time()
+        
+    context = ""    
+    
+    if isKorean(query)==True :
+        system = (
+            """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    else: 
+        system = (
+            """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    
+    human = "{input}"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+                   
+    chain = prompt | chat
+    
+    try: 
+        isTyping(connectionId, requestId)  
+        stream = chain.invoke(
+            {
+                "context": context,
+                "input": revised_question,
+            }
+        )
+        msg = readStreamMsg(connectionId, requestId, stream.content)    
+                            
+        msg = stream.content
+        print('msg: ', msg)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)        
+            
+        sendErrorMessage(connectionId, requestId, err_msg)    
+        raise Exception ("Not able to request to LLM")
+
+    if debugMessageMode == 'true':  
+        end_time_for_inference = time.time()
+        time_for_inference = end_time_for_inference - start_time_for_inference
+    
+    return msg
+
 def get_prompt_template(query, conv_type, rag_type):    
     if isKorean(query):
         if conv_type == "normal": # for General Conversation
@@ -1017,37 +1161,6 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
 
     return msg, reference
 
-def get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type):
-    global time_for_inference
-    
-    start_time_for_inference = time.time()
-    conversation.prompt = get_prompt_template(text, conv_type, rag_type)
-        
-    try: 
-        isTyping(connectionId, requestId)    
-        stream = conversation.predict(input=text)
-        #print('stream: ', stream)                    
-        msg = readStreamMsg(connectionId, requestId, stream)
-        # msg = msg.replace(" ","&nbsp;")  
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)        
-            
-        sendErrorMessage(connectionId, requestId, err_msg)    
-        raise Exception ("Not able to request to LLM")
-
-    if debugMessageMode == 'true':   # extract chat history for debug
-        chats = memory_chat.load_memory_variables({})
-        chat_history_all = chats['history']
-        # print('chat_history_all: ', chat_history_all)
-            
-        print('chat_history length: ', len(chat_history_all))
-            
-    end_time_for_inference = time.time()
-    time_for_inference = end_time_for_inference - start_time_for_inference
-
-    return msg
-
 def get_answer_from_PROMPT(llm, text, conv_type, connectionId, requestId):
     PROMPT = get_prompt_template(text, conv_type, "")
     #print('PROMPT: ', PROMPT)
@@ -1148,9 +1261,6 @@ def getResponse(connectionId, jsonBody):
 
     msg = ""
     reference = ""
-    #token_counter_input = 0
-    #time_for_inference = 0
-    #history_length = 0
     isControlMsg = False
     
     if type == 'text' and body[:11] == 'list models':
@@ -1209,16 +1319,15 @@ def getResponse(connectionId, jsonBody):
                 msg  = "The chat memory was intialized in this session."
             else:       
                 if conv_type == 'normal':      # normal
-                    # msg = get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type)
                     msg = general_conversation(connectionId, requestId, chat, text)                          
-                    print(f"===> {str(history_length)}자 / {token_counter_history}토큰\n")
                     
                 elif conv_type == 'translation':                    
                     msg = translate_text(chat, text)
                 
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
-                    msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type)
+                    # msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type)
+                    msg = qa_using_RAG(connectionId, requestId, chat, text)
                     
                 elif conv_type == 'none':   # no prompt
                     try: 
