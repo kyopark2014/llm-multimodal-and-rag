@@ -235,7 +235,7 @@ def isKorean(text):
     
 def translate_text(chat, text):
     system = (
-        "You are a helpful assistant that translates {input_language} to {output_language}."
+        "You are a helpful assistant that translates {input_language} to {output_language}. Put it in <result> tags."
     )
     human = "{text}"
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
@@ -248,7 +248,7 @@ def translate_text(chat, text):
         output_language = "English"
                         
     chain = prompt | chat
-    msg = chain.invoke(
+    translated_text = chain.invoke(
         {
             "input_language": input_language,
             "output_language": output_language,
@@ -256,7 +256,7 @@ def translate_text(chat, text):
         }
     )
     
-    print('translated message: ', msg.content)
+    print('translated text: ', translated_text.content)
     
     return msg.content
 
