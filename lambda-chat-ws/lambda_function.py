@@ -335,7 +335,7 @@ def revise_question(connectionId, requestId, chat, query):
         system = (
             ""
         )
-        human = """rephrase the follow up <question> to be a standalone question.  Put it in <result> tags.
+        human = """Rephrase the follow up <question> to be a standalone question. Put it in <result> tags.
         <question>            
         {question}
         </question>"""
@@ -354,7 +354,7 @@ def revise_question(connectionId, requestId, chat, query):
                 "question": query,
             }
         )
-        generated_question = result.content         
+        generated_question = result.content
         
         revised_question = generated_question[generated_question.find('<result>')+8:len(generated_question)-9] # remove <result> tag                   
         print('revised_question: ', revised_question)
@@ -986,7 +986,7 @@ def debug_msg_for_revised_question(llm, revised_question, chat_history, connecti
     sendDebugMessage(connectionId, requestId, f"새로운 질문: {revised_question}\n * 대화이력({str(history_length)}자, {token_counter_history} Tokens)을 활용하였습니다.")
 
 def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type):
-    global time_for_revise, time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs, time_for_rag_inference 
+    global time_for_revise, time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs 
     time_for_revise = time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = 0
     
     start_time_for_revise = time.time()
@@ -1391,7 +1391,13 @@ def getResponse(connectionId, jsonBody):
         if history_length:
             statusMsg = statusMsg + f"History: {str(history_length)}자 / {token_counter_history}토큰\n"
             
-        statusMsg = statusMsg + f"Time(초): "            
+        statusMsg = statusMsg + f"Time(초): "
+        if time_for_revise != 0:
+            statusMsg = statusMsg + f"{time_for_revise:.2f}(Revise), "
+        if time_for_rag != 0:
+            statusMsg = statusMsg + f"{time_for_rag:.2f}(RAG), "
+        if time_for_priority_search != 0:
+            statusMsg = statusMsg + f"{time_for_priority_search:.2f}(Priority) "
         if time_for_inference != 0:
             statusMsg = statusMsg + f"{time_for_inference:.2f}(Inference), "
         statusMsg = statusMsg + f"{elapsed_time:.2f}(전체)"
