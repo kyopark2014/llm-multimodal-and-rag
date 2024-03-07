@@ -986,99 +986,68 @@ def get_reference(docs, rag_type, path, doc_prefix):
                            
     return reference
 
-def retrieve_docs_from_vectorstore(vectorstore_opensearch, query, top_k, rag_type):
-    print(f"query: {query} ({rag_type})")
+def retrieve_docs_from_vectorstore(vectorstore_opensearch, query, top_k):
+    print(f"query: {query}")
 
     relevant_docs = []
             
-    if rag_type == 'opensearch':
-        # vector search (semantic) 
-        relevant_documents = vectorstore_opensearch.similarity_search_with_score(
-            query = query,
-            k = top_k,
-        )
-        #print('(opensearch score) relevant_documents: ', relevant_documents)
+    # vector search (semantic) 
+    relevant_documents = vectorstore_opensearch.similarity_search_with_score(
+        query = query,
+        k = top_k,
+    )
+    #print('(opensearch score) relevant_documents: ', relevant_documents)
 
-        for i, document in enumerate(relevant_documents):
-            #print('document.page_content:', document.page_content)
-            #print('document.metadata:', document.metadata)
-            print(f'## Document(opensearch-vector) {i+1}: {document}')
+    for i, document in enumerate(relevant_documents):
+        #print('document.page_content:', document.page_content)
+        #print('document.metadata:', document.metadata)
+        print(f'## Document(opensearch-vector) {i+1}: {document}')
 
-            name = document[0].metadata['name']
-            # print('metadata: ', document[0].metadata)
+        name = document[0].metadata['name']
+        # print('metadata: ', document[0].metadata)
 
-            page = ""
-            if "page" in document[0].metadata:
-                page = document[0].metadata['page']
-            uri = ""
-            if "uri" in document[0].metadata:
-                uri = document[0].metadata['uri']
+        page = ""
+        if "page" in document[0].metadata:
+            page = document[0].metadata['page']
+        uri = ""
+        if "uri" in document[0].metadata:
+            uri = document[0].metadata['uri']
 
-            excerpt = document[0].page_content
-            confidence = str(document[1])
-            assessed_score = str(document[1])
+        excerpt = document[0].page_content
+        confidence = str(document[1])
+        assessed_score = str(document[1])
 
-            if page:
-                print('page: ', page)
-                doc_info = {
-                    "rag_type": 'opensearch-vector',
-                    #"api_type": api_type,
-                    "confidence": confidence,
-                    "metadata": {
-                        #"type": query_result_type,
-                        #"document_id": document_id,
-                        "source": uri,
-                        "title": name,
-                        "excerpt": excerpt,
-                        "translated_excerpt": "",
-                        "document_attributes": {
-                            "_excerpt_page_number": page
-                        }
-                    },
-                    #"query_id": query_id,
-                    #"feedback_token": feedback_token
-                    "assessed_score": assessed_score,
-                }
-            else:
-                doc_info = {
-                    "rag_type": 'opensearch-vector',
-                    #"api_type": api_type,
-                    "confidence": confidence,
-                    "metadata": {
-                        #"type": query_result_type,
-                        #"document_id": document_id,
-                        "source": uri,
-                        "title": name,
-                        "excerpt": excerpt,
-                        "translated_excerpt": ""
-                    },
-                    #"query_id": query_id,
-                    #"feedback_token": feedback_token
-                    "assessed_score": assessed_score,
-                }
-            relevant_docs.append(doc_info)
+        if page:
+            print('page: ', page)
+            doc_info = {
+                "rag_type": 'opensearch-vector',
+                "confidence": confidence,
+                "metadata": {
+                    "source": uri,
+                    "title": name,
+                    "excerpt": excerpt,
+                    "translated_excerpt": "",
+                    "document_attributes": {
+                        "_excerpt_page_number": page
+                    }
+                },
+                "assessed_score": assessed_score,
+            }
+        else:
+            doc_info = {
+                "rag_type": 'opensearch-vector',
+                "confidence": confidence,
+                "metadata": {
+                    "source": uri,
+                    "title": name,
+                    "excerpt": excerpt,
+                    "translated_excerpt": ""
+                },
+                "assessed_score": assessed_score,
+            }
+        relevant_docs.append(doc_info)
         
     return relevant_docs
-
-_ROLE_MAP = {"human": "\n\nHuman: ", "ai": "\n\nAssistant: "}
-def _get_chat_history(chat_history):
-    #print('_get_chat_history: ', chat_history)
-    buffer = ""
-    for dialogue_turn in chat_history:
-        if isinstance(dialogue_turn, BaseMessage):
-            role_prefix = _ROLE_MAP.get(dialogue_turn.type, f"{dialogue_turn.type}: ")
-            buffer += f"\n{role_prefix}{dialogue_turn.content}"
-        elif isinstance(dialogue_turn, tuple):
-            human = "\n\nHuman: " + dialogue_turn[0]
-            ai = "\n\nAssistant: " + dialogue_turn[1]
-            buffer += "\n" + "\n".join([human, ai])
-        else:
-            raise ValueError(
-                f"Unsupported chat history format: {type(dialogue_turn)}."
-                f" Full chat history: {chat_history} "
-            )
-    #print('buffer: ', buffer)
-    return buffer
 
 def debug_msg_for_revised_question(llm, revised_question, chat_history, connectionId, requestId):
     global history_length, token_counter_history # debugMessageMode 
@@ -1105,7 +1074,6 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
     
     vectorstore_opensearch = OpenSearchVectorSearch(
         index_name = "idx-*", # all
-        #index_name=f"idx-{userId}',
         is_aoss = False,
         ef_search = 1024, # 512(default)
         m=48,
@@ -1128,8 +1096,8 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
     print('processing time for revised question: ', time_for_revise)
 
     relevant_docs = [] 
-    rel_docs = retrieve_docs_from_vectorstore(vectorstore_opensearch=vectorstore_opensearch, query=revised_question, top_k=top_k, rag_type=reg)
-    print(f'rel_docs ({reg}): '+json.dumps(rel_docs))
+    rel_docs = retrieve_docs_from_vectorstore(vectorstore_opensearch=vectorstore_opensearch, query=revised_question, top_k=top_k)
+    print(f'rel_docs ({rag_type}): '+json.dumps(rel_docs))
                 
     if(len(rel_docs)>=1):
         for doc in rel_docs:
@@ -1174,20 +1142,12 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
                         "api_type": api_type,
                         "confidence": confidence,
                         "metadata": {
-                            #"type": query_result_type,
-                            # "document_id": document_id,
                             "source": uri,
                             "title": title,
                             "excerpt": excerpt,
                             "translated_excerpt": "",
-                            #"document_attributes": {
-                            #    "_excerpt_page_number": page
-                            #}
                         },
-                        #"query_id": query_id,
-                        #"feedback_token": feedback_token
                         "assessed_score": assessed_score,
-                        #"result_id": result_id
                     }
                     relevant_docs.append(doc_info)                
         except Exception:
