@@ -259,7 +259,7 @@ def translate_text(chat, text):
     msg = result.content
     print('translated text: ', msg)
     
-    return msg[msg.find('<result>')+8:len(msg)-10] # remove <result> tag
+    return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
 
 def get_prompt_template(query, conv_type, rag_type):    
     if isKorean(query):
