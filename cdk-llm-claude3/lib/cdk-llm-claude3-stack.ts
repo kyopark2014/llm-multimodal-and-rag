@@ -38,6 +38,21 @@ const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default
 const enableParallelSummay = 'true';
 const rag_method = 'RetrievalPrompt' // RetrievalPrompt, RetrievalQA, ConversationalRetrievalChain
 
+const claude_Sonnet = [
+  {
+    "bedrock_region": "us-west-2", // Oregon
+    "model_type": "claude",
+    "model_id": "anthropic.claude-v2:1",   
+    "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "us-east-1", // N.Virginia
+    "model_type": "claude",
+    "model_id": "anthropic.claude-v2:1",
+    "maxOutputTokens": "8196"
+  }
+];
+
 const claude_instant = [
   {
     "bedrock_region": "us-west-2", // Oregon
@@ -77,10 +92,23 @@ const claude_basic = [
     "model_type": "claude",
     "model_id": "anthropic.claude-v2:1",
     "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "us-northeast-1", // Tokyo
+    "model_type": "claude",
+    "model_id": "anthropic.claude-v2:1",
+    "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "eu-central-1", // Europe (Frankfurt)
+    "model_type": "claude",
+    "model_id": "anthropic.claude-v2:1",
+    "maxOutputTokens": "8196"
   }
 ];
 
-const profile_of_LLMs = claude_instant;
+
+const profile_of_LLMs = claude_Sonnet;
 
 export class CdkLlmClaude3Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {

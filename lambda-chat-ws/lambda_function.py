@@ -15,9 +15,7 @@ from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chains import ConversationChain
-from langchain.chains import RetrievalQA
 from langchain.chains import LLMChain
-from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
@@ -30,6 +28,9 @@ from multiprocessing import Process, Pipe
 from googleapiclient.discovery import build
 from opensearchpy import OpenSearch
 from langchain.schema import BaseMessage
+
+from langchain_community.chat_models import BedrockChat
+from langchain_core.messages import HumanMessage
 
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
