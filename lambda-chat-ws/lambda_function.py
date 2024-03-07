@@ -206,6 +206,11 @@ def isKorean(text):
         return False
     
 def translate_text(chat, text):
+    global time_for_inference
+    
+    if debugMessageMode == 'true':  
+        start_time_for_inference = time.time()
+        
     system = (
         "You are a helpful assistant that translates {input_language} to {output_language}. Put it in <result> tags."
     )
@@ -222,16 +227,26 @@ def translate_text(chat, text):
         output_language = "English"
                         
     chain = prompt | chat
-    result = chain.invoke(
-        {
-            "input_language": input_language,
-            "output_language": output_language,
-            "text": text,
-        }
-    )
     
-    msg = result.content
-    print('translated text: ', msg)
+    try: 
+        result = chain.invoke(
+            {
+                "input_language": input_language,
+                "output_language": output_language,
+                "text": text,
+            }
+        )
+        
+        msg = result.content
+        print('translated text: ', msg)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+
+    if debugMessageMode == 'true':          
+        end_time_for_inference = time.time()
+        time_for_inference = end_time_for_inference - start_time_for_inference
     
     return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
 
@@ -280,7 +295,15 @@ def general_conversation(connectionId, requestId, chat, query):
         raise Exception ("Not able to request to LLM")
 
     if debugMessageMode == 'true':  
-        history_length = len(history)
+        chat_history = ""
+        for dialogue_turn in history:
+            print('type: ', dialogue_turn.type)
+            print('content: ', dialogue_turn.content)
+            
+            dialog = f"{dialogue_turn.type}: {dialogue_turn.content}\n"            
+            chat_history = chat_history + dialog
+                
+        history_length = len(chat_history)
         print('chat_history length: ', history_length)
         
         end_time_for_inference = time.time()
@@ -585,7 +608,7 @@ def readStreamMsg(connectionId, requestId, stream):
     msg = ""
     if stream:
         for event in stream:
-            print('event: ', event)
+            # print('event: ', event)
             msg = msg + event
 
             result = {
