@@ -989,7 +989,7 @@ def debug_msg_for_revised_question(llm, revised_question, chat_history, connecti
 
 def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type):
     global time_for_revise, time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs, time_for_rag_inference 
-    time_for_revise = time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = time_for_rag_inference = 0
+    time_for_revise = time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = 0
     
     start_time_for_revise = time.time()
     
@@ -1002,33 +1002,19 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
     print('processing time for revised question: ', time_for_revise)
     
     # retrieve relevant documents from RAG
-    relevant_docs = retrieve_docs_from_RAG(chat, text, connectionId, requestId, bedrock_embedding, rag_type)
+    selected_relevant_docs = retrieve_docs_from_RAG(chat, text, connectionId, requestId, bedrock_embedding, rag_type)
     
-    end_time_for_rag_inference = time.time()
-    time_for_rag_inference = end_time_for_rag_inference - end_time_for_revise
-    
-    # priority search
-    end_time_for_rag = time.time()
-    if len(relevant_docs)>=1:
-        selected_relevant_docs = priority_search(revised_question, relevant_docs, bedrock_embedding, minDocSimilarity)
-        print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
-        # print('selected_relevant_docs (google): ', selected_relevant_docs)
-
-        end_time_for_priority_search = time.time() 
-        time_for_priority_search = end_time_for_priority_search - end_time_for_rag
-        print('processing time for priority search: ', time_for_priority_search)
-        number_of_relevant_docs = len(selected_relevant_docs)
-
-        for document in selected_relevant_docs:
-            content = document['metadata']['excerpt']
-        
-            relevant_context = relevant_context + content + "\n\n"
+    number_of_relevant_docs = len(selected_relevant_docs)    
+    for document in selected_relevant_docs:
+        content = document['metadata']['excerpt']
+                
+        relevant_context = relevant_context + content + "\n\n"
         print('relevant_context: ', relevant_context)
     
     end_time_for_rag = time.time()
     time_for_rag = end_time_for_rag - end_time_for_revise
     print('processing time for RAG: ', time_for_rag)
-    
+        
     # query using RAG context
     msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, revised_question)
 
@@ -1036,11 +1022,10 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
         reference = get_reference(selected_relevant_docs)  
 
     end_time_for_inference = time.time()
-    time_for_inference = end_time_for_inference - end_time_for_priority_search
+    time_for_inference = end_time_for_inference - end_time_for_rag
     print('processing time for inference: ', time_for_inference)
     
-    global relevant_length, token_counter_relevant_docs
-    
+    global relevant_length, token_counter_relevant_docs    
     if debugMessageMode=='true':   # extract chat history for debug
         chat_history_all = extract_chat_history_from_memory()
         # print('chat_history_all: ', chat_history_all)
@@ -1059,12 +1044,6 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
     return msg, reference
     
 def retrieve_docs_from_RAG(chat, revised_question, connectionId, requestId, bedrock_embedding, rag_type):
-    global time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs  # for debug
-    time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = 0
-
-    global time_for_rag_inference
-    time_for_rag_inference = 0
-    
     vectorstore_opensearch = OpenSearchVectorSearch(
         index_name = "idx-*", # all
         is_aoss = False,
@@ -1075,11 +1054,7 @@ def retrieve_docs_from_RAG(chat, revised_question, connectionId, requestId, bedr
         opensearch_url=opensearch_url,
         http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
     ) 
-    
-    reference = ""
-    relevant_context = ""
-    msg = ""
-     
+         
     relevant_docs = [] 
     rel_docs = retrieve_docs_from_vectorstore(vectorstore_opensearch=vectorstore_opensearch, query=revised_question, top_k=top_k)
     print(f'rel_docs ({rag_type}): '+json.dumps(rel_docs))
@@ -1092,58 +1067,69 @@ def retrieve_docs_from_RAG(chat, revised_question, connectionId, requestId, bedr
         for i, doc in enumerate(relevant_docs):
             print(f"#### relevant_docs ({i}): {json.dumps(doc)}")
 
-    end_time_for_rag = time.time()
-    time_for_rag = end_time_for_rag - end_time_for_revise
-    print('processing time for RAG: ', time_for_rag)
-
+    # priority search
+    global time_for_priority_search
+    time_for_priority_search = 0    
+    start_time_for_priority_search = time.time()
+    
     selected_relevant_docs = []
     if len(relevant_docs)>=1:
         print('start priority search')
         selected_relevant_docs = priority_search(revised_question, relevant_docs, bedrock_embedding, minDocSimilarity)
         print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
+        
+        if len(selected_relevant_docs)==0:  # google api
+            print('No relevant document! So use google api')            
+            api_key = google_api_key
+            cse_id = google_cse_id 
+                
+            relevant_docs = []
+            try: 
+                service = build("customsearch", "v1", developerKey=api_key)
+                result = service.cse().list(q=revised_question, cx=cse_id).execute()
+                # print('google search result: ', result)
 
-    if len(selected_relevant_docs)==0:
-        print('No relevant document! So use google api')            
-        api_key = google_api_key
-        cse_id = google_cse_id 
-            
-        relevant_docs = []
-        try: 
-            service = build("customsearch", "v1", developerKey=api_key)
-            result = service.cse().list(q=revised_question, cx=cse_id).execute()
-            # print('google search result: ', result)
+                if "items" in result:
+                    for item in result['items']:
+                        api_type = "google api"
+                        excerpt = item['snippet']
+                        uri = item['link']
+                        title = item['title']
+                        confidence = ""
+                        assessed_score = ""
+                            
+                        doc_info = {
+                            "rag_type": 'search',
+                            "api_type": api_type,
+                            "confidence": confidence,
+                            "metadata": {
+                                "source": uri,
+                                "title": title,
+                                "excerpt": excerpt,
+                                "translated_excerpt": "",
+                            },
+                            "assessed_score": assessed_score,
+                        }
+                        relevant_docs.append(doc_info)           
+                
+                if len(relevant_docs)>=1:
+                    selected_relevant_docs = priority_search(revised_question, relevant_docs, bedrock_embedding, minDocSimilarity)
+                    print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
+                    # print('selected_relevant_docs (google): ', selected_relevant_docs)     
+            except Exception:
+                err_msg = traceback.format_exc()
+                print('error message: ', err_msg)       
 
-            if "items" in result:
-                for item in result['items']:
-                    api_type = "google api"
-                    excerpt = item['snippet']
-                    uri = item['link']
-                    title = item['title']
-                    confidence = ""
-                    assessed_score = ""
-                        
-                    doc_info = {
-                        "rag_type": 'search',
-                        "api_type": api_type,
-                        "confidence": confidence,
-                        "metadata": {
-                            "source": uri,
-                            "title": title,
-                            "excerpt": excerpt,
-                            "translated_excerpt": "",
-                        },
-                        "assessed_score": assessed_score,
-                    }
-                    relevant_docs.append(doc_info)                
-        except Exception:
-            err_msg = traceback.format_exc()
-            print('error message: ', err_msg)       
-
-            sendErrorMessage(connectionId, requestId, "Not able to use Google API. Check the credentials")    
-            #sendErrorMessage(connectionId, requestId, err_msg)    
-            #raise Exception ("Not able to search using google api") 
-                    
-    return relevant_docs
+                sendErrorMessage(connectionId, requestId, "Not able to use Google API. Check the credentials")    
+                #sendErrorMessage(connectionId, requestId, err_msg)    
+                #raise Exception ("Not able to search using google api") 
+                
+    
+    end_time_for_priority_search = time.time() 
+    time_for_priority_search = end_time_for_priority_search - start_time_for_priority_search
+    print('processing time for priority search: ', time_for_priority_search)
+    
+    return selected_relevant_docs
     
 def get_answer_from_PROMPT(llm, text, conv_type, connectionId, requestId):
     PROMPT = get_prompt_template(text, conv_type, "")
