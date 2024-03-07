@@ -146,6 +146,32 @@ def get_llm(profile_of_LLMs, selected_LLM):
         
     return llm
 
+
+def get_embedding(profile_of_LLMs, selected_LLM):
+    profile = profile_of_LLMs[selected_LLM]
+    bedrock_region =  profile['bedrock_region']
+    modelId = profile['model_id']
+    print(f'LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    
+    # bedrock   
+    boto3_bedrock = boto3.client(
+        service_name='bedrock-runtime',
+        region_name=bedrock_region,
+        config=Config(
+            retries = {
+                'max_attempts': 30
+            }            
+        )
+    )
+    
+    bedrock_embedding = BedrockEmbeddings(
+        client=boto3_bedrock,
+        region_name = bedrock_region,
+        model_id = 'amazon.titan-embed-text-v1' 
+    )  
+    
+    return bedrock_embedding
+
 def sendMessage(id, body):
     try:
         client.post_to_connection(
@@ -1240,14 +1266,8 @@ def getResponse(connectionId, jsonBody):
     print(f'selected_LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
     print('profile: ', profile)
     
-    llm = get_llm(profile_of_LLMs, selected_LLM)
-
-    # embedding for RAG
-    #bedrock_embeddings = BedrockEmbeddings(
-    #    client=boto3_bedrock,
-    #    region_name = bedrock_region,
-    #    model_id = 'amazon.titan-embed-text-v1' 
-    #)    
+    llm = get_llm(profile_of_LLMs, selected_LLM)    
+    bedrock_embeddings = get_embedding(profile_of_LLMs, selected_LLM)
 
     # create memory
     if userId in map_chat or userId in map_chain:  
