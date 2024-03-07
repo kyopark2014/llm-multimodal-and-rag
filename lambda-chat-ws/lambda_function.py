@@ -257,6 +257,9 @@ def general_conversation(chat, conversation, query):
     history = memory_chain.load_memory_variables({})["chat_history"]
     print('memory_chain: ', history)      
     
+    historyAll = memory_chain.load_memory_variables({})
+    print('historyAll: ', historyAll)   
+    
     from langchain_core.messages import AIMessage, HumanMessage
 
     human_message = HumanMessage(content="What is the best way to learn programming?")
