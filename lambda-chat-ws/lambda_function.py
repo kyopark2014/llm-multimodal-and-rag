@@ -1395,7 +1395,7 @@ def getResponse(connectionId, jsonBody):
             statusMsg = statusMsg + f"{time_for_inference:.2f}(Inference), "
         statusMsg = statusMsg + f"{elapsed_time:.2f}(전체)"
             
-        sendResultMessage(connectionId, requestId, msg+statusMsg)
+        sendResultMessage(connectionId, requestId, msg+reference+statusMsg)
 
     if selected_LLM >= len(profile_of_LLMs)-1:
         selected_LLM = 0
