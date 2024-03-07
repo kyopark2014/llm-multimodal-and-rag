@@ -1168,7 +1168,6 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
         end_time_for_inference = time.time()
         time_for_inference = end_time_for_inference - end_time_for_priority_search
         print('processing time for inference: ', time_for_inference)
-        
     
     global relevant_length, token_counter_relevant_docs
     
@@ -1190,6 +1189,9 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
     return msg, reference
 
 def get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type):
+    global time_for_inference
+    
+    start_time_for_inference = time.time()
     conversation.prompt = get_prompt_template(text, conv_type, rag_type)
     try: 
         isTyping(connectionId, requestId)    
@@ -1210,6 +1212,9 @@ def get_answer_using_ConversationChain(text, conversation, conv_type, connection
         # print('chat_history_all: ', chat_history_all)
         
         print('chat_history length: ', len(chat_history_all))
+        
+    end_time_for_inference = time.time()
+    time_for_inference = end_time_for_inference - start_time_for_inference
 
     return msg
 
@@ -1461,47 +1466,20 @@ def getResponse(connectionId, jsonBody):
     else:
         selected_LLM = selected_LLM + 1
 
-    if speech_uri:
-        speech = '\n' + f'<a href={speech_uri} target=_blank>{"[결과 읽어주기 (mp3)]"}</a>'                
-        sendResultMessage(connectionId, requestId, msg+reference+speech)
-
-        if conv_type=='qa' and debugMessageMode=='true' and reference:
-            statusMsg = f"\n[통계]\nRegion: {bedrock_region}\nQuestion: {str(len(text))}자 / {token_counter_input}토큰\nAnswer: {str(len(msg))}자 / {token_counter_output}토큰\n"
+    if debugMessageMode=='true': # other cases
+        statusMsg = f"\n[통계]\nRegion: {bedrock_region}\n"
+        if token_counter_input:
+            statusMsg = statusMsg + f"Question: {str(len(text))}자 / {token_counter_input}토큰\nAnswer: {str(len(msg))}자 / {token_counter_output}토큰\n"
+            
+        if history_length:
             statusMsg = statusMsg + f"History: {str(history_length)}자 / {token_counter_history}토큰\n"
-            statusMsg = statusMsg + f"RAG: {str(relevant_length)}자 / {token_counter_relevant_docs}토큰 ({number_of_relevant_docs})\n"
-
-            statusMsg = statusMsg + f"Time(초): "            
-            if time_for_revise != 0:
-                statusMsg = statusMsg + f"{time_for_revise:.2f}(Revise), "
-            if time_for_rag != 0:
-                statusMsg = statusMsg + f"{time_for_rag:.2f}(RAG), "
-            if time_for_priority_search != 0:
-                statusMsg = statusMsg + f"{time_for_priority_search:.2f}(Priority) "
-            if time_for_inference != 0:
-                statusMsg = statusMsg + f"{time_for_inference:.2f}(Inference), "
-            statusMsg = statusMsg + f"{elapsed_time:.2f}(전체)"
             
-            if time_for_rag_inference != 0:
-                statusMsg = statusMsg + f"\nRAG-Detail: {time_for_rag_inference:.2f}(Inference(KOR)), "
-
-            sendResultMessage(connectionId, requestId, msg+reference+speech+statusMsg)
-        elif debugMessageMode=='true': # other cases
-            statusMsg = f"\n[통계]\nRegion: {bedrock_region}\n"
-            if token_counter_input:
-                statusMsg = statusMsg + f"Question: {str(len(text))}자 / {token_counter_input}토큰\nAnswer: {str(len(msg))}자 / {token_counter_output}토큰\n"
+        statusMsg = statusMsg + f"Time(초): "            
+        if time_for_inference != 0:
+            statusMsg = statusMsg + f"{time_for_inference:.2f}(Inference), "
+        statusMsg = statusMsg + f"{elapsed_time:.2f}(전체)"
             
-            if history_length:
-                statusMsg = statusMsg + f"History: {str(history_length)}자 / {token_counter_history}토큰\n"
-            
-            if history_length:
-                statusMsg = statusMsg + f"History: {str(history_length)}자 / {token_counter_history}토큰\n"
-
-            statusMsg = statusMsg + f"Time(초): "            
-            if time_for_inference != 0:
-                statusMsg = statusMsg + f"{time_for_inference:.2f}(Inference), "
-            statusMsg = statusMsg + f"{elapsed_time:.2f}(전체)"
-            
-            sendResultMessage(connectionId, requestId, msg+speech+statusMsg)
+        sendResultMessage(connectionId, requestId, msg+statusMsg)
 
     return msg, reference
 
