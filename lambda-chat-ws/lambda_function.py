@@ -235,7 +235,7 @@ def translate_text(chat, text):
     
     return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
 
-def general_conversation(chat, conversation, query):
+def general_conversation(connectionId, requestId, chat, query):
     if isKorean(query)==True :
         system = (
             "다음의 Human과 Assistant의 친근한 이전 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
@@ -247,49 +247,24 @@ def general_conversation(chat, conversation, query):
     
     human = "{input}"
     
-    #prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
     prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
     print('prompt: ', prompt)
     
-    #chat_history = extract_chat_history_from_memory()
-    #print('chat_history: ', chat_history)
-    
     history = memory_chain.load_memory_variables({})["chat_history"]
-    print('memory_chain: ', history)      
-    
-    historyAll = memory_chain.load_memory_variables({})
-    print('historyAll: ', historyAll)   
-    
-    from langchain_core.messages import AIMessage, HumanMessage
-
-    human_message = HumanMessage(content="What is the best way to learn programming?")
-    ai_message = AIMessage(
-        content="""\
-    1. Choose a programming language: Decide on a programming language that you want to learn.
-
-    2. Start with the basics: Familiarize yourself with the basic programming concepts such as variables, data types and control structures.
-
-    3. Practice, practice, practice: The best way to learn programming is through hands-on experience\
-    """
-    )
-        
+    print('memory_chain: ', history)
+                
     chain = prompt | chat
-    result = chain.invoke(
+    stream = chain.invoke(
         {
-            #"history": [human_message, ai_message],
             "history": history,
             "input": query,
         }
     )
+    msg = readStreamMsg(connectionId, requestId, stream)    
                             
-    #msg = prompt.format_prompt(
-    #    history=chat_history, input=text
-    #).to_messages()
-    
-    msg = result.content
+    msg = stream.content
     print('msg: ', msg)
     
-    #return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
     return msg
 
 def get_prompt_template(query, conv_type, rag_type):    
@@ -589,7 +564,7 @@ def readStreamMsg(connectionId, requestId, stream):
     msg = ""
     if stream:
         for event in stream:
-            #print('event: ', event)
+            print('event: ', event)
             msg = msg + event
 
             result = {
@@ -1182,12 +1157,11 @@ def getResponse(connectionId, jsonBody):
                 print('initiate the chat memory!')
                 msg  = "The chat memory was intialized in this session."
             else:       
-                if conv_type == 'translation':                    
-                    msg = translate_text(chat, text)
-                    
-                elif conv_type == 'normal' or conv_type == 'funny':      # normal
+                if conv_type == 'normal':      # normal
                     # msg = get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type)
-                    msg = general_conversation(chat, conversation, text)
+                    msg = general_conversation(connectionId, requestId, chat, text)                    
+                elif conv_type == 'translation':                    
+                    msg = translate_text(chat, text)
                 
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
