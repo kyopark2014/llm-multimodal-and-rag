@@ -1151,10 +1151,7 @@ def get_profile(function_type):
         profile_of_LLMs = claude_instant
     else:
         profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
-    
-    if selected_LLM >= len(profile_of_LLMs)-1:
-        selected_LLM = 0
-        
+            
     return profile_of_LLMs
 
 def getResponse(connectionId, jsonBody):
@@ -1183,13 +1180,16 @@ def getResponse(connectionId, jsonBody):
     global map_chain, map_chat, memory_chat, memory_chain, debugMessageMode, selected_LLM, allowDualSearch
         
     profile_of_LLMs = get_profile(function_type)
-            
+    
     # Multi-region LLM
+    if selected_LLM >= len(profile_of_LLMs)-1:
+        selected_LLM = 0
+        
     profile = profile_of_LLMs[selected_LLM]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'selected_LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    print('profile: ', profile)
+    # print('profile: ', profile)
     
     llm = get_llm(profile_of_LLMs, selected_LLM)    
     bedrock_embedding = get_embedding(profile_of_LLMs, selected_LLM)
