@@ -236,6 +236,11 @@ def translate_text(chat, text):
     return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
 
 def general_conversation(connectionId, requestId, chat, query):
+    global time_for_inference, history_length
+    
+    if debugMessageMode == 'true':  
+        start_time_for_inference = time.time()
+    
     if isKorean(query)==True :
         system = (
             "다음의 Human과 Assistant의 친근한 이전 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
@@ -254,16 +259,32 @@ def general_conversation(connectionId, requestId, chat, query):
     print('memory_chain: ', history)
                 
     chain = prompt | chat
-    stream = chain.invoke(
-        {
-            "history": history,
-            "input": query,
-        }
-    )
-    msg = readStreamMsg(connectionId, requestId, stream.content)    
+    
+    try: 
+        isTyping(connectionId, requestId)  
+        stream = chain.invoke(
+            {
+                "history": history,
+                "input": query,
+            }
+        )
+        msg = readStreamMsg(connectionId, requestId, stream.content)    
                             
-    msg = stream.content
-    print('msg: ', msg)
+        msg = stream.content
+        print('msg: ', msg)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)        
+            
+        sendErrorMessage(connectionId, requestId, err_msg)    
+        raise Exception ("Not able to request to LLM")
+
+    if debugMessageMode == 'true':  
+        history_length = len(history)
+        print('chat_history length: ', history_length)
+        
+        end_time_for_inference = time.time()
+        time_for_inference = end_time_for_inference - start_time_for_inference
     
     return msg
 
