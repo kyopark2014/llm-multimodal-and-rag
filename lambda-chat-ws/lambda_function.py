@@ -32,11 +32,79 @@ from langchain.schema import BaseMessage
 from langchain_community.chat_models import BedrockChat
 from langchain_core.messages import HumanMessage
 
+claude3_sonnet = [
+  {
+    "bedrock_region": "us-west-2", # Oregon
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",   
+    "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "us-east-1", # N.Virginia
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "maxOutputTokens": "8196"
+  }
+];
+
+claude_instant = [
+  {
+    "bedrock_region": "us-west-2", # Oregon
+    "model_type": "claude",
+    "model_id": "anthropic.claude-instant-v1",
+    "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "us-east-1", # N.Virginia
+    "model_type": "claude",
+    "model_id": "anthropic.claude-instant-v1",
+    "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "ap-northeast-1", # Tokyo
+    "model_type": "claude",
+    "model_id": "anthropic.claude-instant-v1",
+    "maxOutputTokens": "8196"
+  },    
+  {
+    "bedrock_region": "eu-central-1", # Europe (Frankfurt)
+    "model_type": "claude",
+    "model_id": "anthropic.claude-instant-v1",
+    "maxOutputTokens": "8196"
+    },
+]
+
+claude2 = [
+  {
+    "bedrock_region": "us-west-2", # Oregon
+    "model_type": "claude",
+    "model_id": "anthropic.claude-v2:1",   
+    "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "us-east-1", # N.Virginia
+    "model_type": "claude",
+    "model_id": "anthropic.claude-v2:1",
+    "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "us-northeast-1", # Tokyo
+    "model_type": "claude",
+    "model_id": "anthropic.claude-v2:1",
+    "maxOutputTokens": "8196"
+  },
+  {
+    "bedrock_region": "eu-central-1", # Europe (Frankfurt)
+    "model_type": "claude",
+    "model_id": "anthropic.claude-v2:1",
+    "maxOutputTokens": "8196"
+  }
+]
+
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
 callLogTableName = os.environ.get('callLogTableName')
-profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
 
 opensearch_account = os.environ.get('opensearch_account')
 opensearch_passwd = os.environ.get('opensearch_passwd')
@@ -145,7 +213,6 @@ def get_llm(profile_of_LLMs, selected_LLM):
             model_kwargs=parameters)
         
     return llm
-
 
 def get_embedding(profile_of_LLMs, selected_LLM):
     profile = profile_of_LLMs[selected_LLM]
@@ -842,7 +909,7 @@ def get_revised_question(llm, connectionId, requestId, query):
     
     return revised_question.replace("\n"," ")
 
-def priority_search(query, relevant_docs, bedrock_embeddings, minSimilarity):
+def priority_search(query, relevant_docs, bedrock_embedding, minSimilarity):
     excerpts = []
     for i, doc in enumerate(relevant_docs):
         # print('doc: ', doc)
@@ -864,7 +931,7 @@ def priority_search(query, relevant_docs, bedrock_embeddings, minSimilarity):
         )  
     print('excerpts: ', excerpts)
 
-    embeddings = bedrock_embeddings
+    embeddings = bedrock_embedding
     vectorstore_confidence = FAISS.from_documents(
         excerpts,  # documents
         embeddings  # embeddings
@@ -1029,7 +1096,7 @@ def debug_msg_for_revised_question(llm, revised_question, chat_history, connecti
 
     sendDebugMessage(connectionId, requestId, f"새로운 질문: {revised_question}\n * 대화이력({str(history_length)}자, {token_counter_history} Tokens)을 활용하였습니다.")
 
-def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_embeddings, rag_type):
+def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type):
     global time_for_revise, time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs  # for debug
     time_for_revise = time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = 0
 
@@ -1043,7 +1110,7 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
         ef_search = 1024, # 512(default)
         m=48,
         #engine="faiss",  # default: nmslib
-        embedding_function = bedrock_embeddings,
+        embedding_function = bedrock_embedding,
         opensearch_url=opensearch_url,
         http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
     ) 
@@ -1079,7 +1146,7 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
     selected_relevant_docs = []
     if len(relevant_docs)>=1:
         print('start priority search')
-        selected_relevant_docs = priority_search(revised_question, relevant_docs, bedrock_embeddings, minDocSimilarity)
+        selected_relevant_docs = priority_search(revised_question, relevant_docs, bedrock_embedding, minDocSimilarity)
         print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
 
     if len(selected_relevant_docs)==0:
@@ -1132,7 +1199,7 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
             #raise Exception ("Not able to search using google api") 
             
         if len(relevant_docs)>=1:
-            selected_relevant_docs = priority_search(revised_question, relevant_docs, bedrock_embeddings, minDocSimilarity)
+            selected_relevant_docs = priority_search(revised_question, relevant_docs, bedrock_embedding, minDocSimilarity)
             print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
         # print('selected_relevant_docs (google): ', selected_relevant_docs)
 
@@ -1261,10 +1328,16 @@ def getResponse(connectionId, jsonBody):
     global enableReference
     global map_chain, map_chat, memory_chat, memory_chain, debugMessageMode, selected_LLM, allowDualSearch
     
-    if function_type == 'dual-search':
-        allowDualSearch = 'true'
+    if function_type == 'normal-claude3':
+        profile_of_LLMs = claude3_sonnet
+    elif function_type == 'normal-claude2':
+        profile_of_LLMs = claude2
+    elif function_type == 'normal-claude_instant':
+        profile_of_LLMs = claude_instant
+    else:
+        profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
 
-    # Multi-LLM
+    # Multi-region LLM
     profile = profile_of_LLMs[selected_LLM]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
@@ -1272,9 +1345,9 @@ def getResponse(connectionId, jsonBody):
     print('profile: ', profile)
     
     llm = get_llm(profile_of_LLMs, selected_LLM)    
-    bedrock_embeddings = get_embedding(profile_of_LLMs, selected_LLM)
+    bedrock_embedding = get_embedding(profile_of_LLMs, selected_LLM)
 
-    # create memory
+    # allocate memory
     if userId in map_chat or userId in map_chain:  
         print('memory exist. reuse it!')        
         memory_chain = map_chain[userId]
@@ -1289,11 +1362,6 @@ def getResponse(connectionId, jsonBody):
         memory_chat = ConversationBufferWindowMemory(human_prefix='Human', ai_prefix='Assistant', k=MSG_HISTORY_LENGTH)
         map_chat[userId] = memory_chat
 
-        # memory_chain = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-        #from langchain.memory import ConversationSummaryBufferMemory
-        #memory_chat = ConversationSummaryBufferMemory(llm=llm, max_token_limit=1024,
-        #    human_prefix='Human', ai_prefix='Assistant') #Maintains a summary of previous messages
-
         allowTime = getAllowTime()
         load_chat_history(userId, allowTime, conv_type, rag_type)
         conversation = ConversationChain(llm=llm, verbose=False, memory=memory_chat)
@@ -1302,7 +1370,6 @@ def getResponse(connectionId, jsonBody):
 
     msg = ""
     reference = ""
-    speech_uri = ""
     token_counter_input = 0
     time_for_inference = 0
     history_length = 0
@@ -1375,7 +1442,7 @@ def getResponse(connectionId, jsonBody):
                 
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
-                    msg, reference = get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_embeddings, rag_type)
+                    msg, reference = get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type)
                     
                 elif conv_type == 'none':   # no prompt
                     try: 

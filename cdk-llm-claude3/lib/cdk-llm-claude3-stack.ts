@@ -37,7 +37,7 @@ const supportedFormat = JSON.stringify(["pdf", "txt", "csv", "pptx", "ppt", "doc
 const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default)
 const enableParallelSummay = 'true';
 
-const claude_Sonnet = [
+const claude3_sonnet = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude3",
@@ -79,7 +79,7 @@ const claude_instant = [
     },
 ];
 
-const claude_basic = [
+const claude2 = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude",
@@ -106,8 +106,7 @@ const claude_basic = [
   }
 ];
 
-
-const profile_of_LLMs = claude_Sonnet;
+const profile_of_LLMs = claude3_sonnet;
 
 export class CdkLlmClaude3Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {

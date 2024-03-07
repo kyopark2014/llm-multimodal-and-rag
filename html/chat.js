@@ -294,47 +294,29 @@ function onSend(e) {
         let requestId = uuidv4();
         addSentMessage(requestId, timestr, message.value);
         
-        if(conversationType=='qa-all') {
-            type = "text",
-            conv_type = 'qa',
-            rag_type = 'all',
-            function_type = 'rag'
-        }
-        else if(conversationType=='qa-kendra') {
-            type = "text",
-            conv_type = 'qa',
-            rag_type = 'kendra',
-            function_type = 'rag'
-        }
-        else if(conversationType=='qa-opensearch') {
+        if(conversationType=='qa-opensearch') {
             type = "text",
             conv_type = 'qa',
             rag_type = 'opensearch',
             function_type = 'rag'
         }
-        else if(conversationType=='qa-faiss') {
+        else if(conversationType=='normal-claude3') {
             type = "text",
-            conv_type = 'qa',
-            rag_type = 'faiss',
-            function_type = 'rag'
+            conv_type = 'normal',
+            rag_type = '',
+            function_type = 'normal-claude3'
         }
-        else if(conversationType=='dual-search') {
+        else if(conversationType=='normal-claude2') {
             type = "text",
-            conv_type = 'qa',
-            rag_type = 'all',
-            function_type = 'dual-search'
+            conv_type = 'normal',
+            rag_type = '',
+            function_type = 'normal-claude2'
         }
-        else if(conversationType=='code-generation-python') {
-            type = "code",
-            conv_type = 'qa',
-            rag_type = 'opensearch',
-            function_type = 'code-generation-python'
-        }
-        else if(conversationType=='code-generation-nodejs') {
-            type = "code",
-            conv_type = 'qa',
-            rag_type = 'opensearch',
-            function_type = 'code-generation-nodejs'
+        else if(conversationType=='normal-claude_instant') {
+            type = "text",
+            conv_type = 'normal',
+            rag_type = '',
+            function_type = 'normal-claude_instant'
         }
         else {
             type = "text",
