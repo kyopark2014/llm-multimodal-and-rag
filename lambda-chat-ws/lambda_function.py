@@ -51,15 +51,11 @@ useParallelRAG = os.environ.get('useParallelRAG', 'true')
 roleArn = os.environ.get('roleArn')
 top_k = int(os.environ.get('numberOfRelevantDocs', '8'))
 selected_LLM = 0
-capabilities = json.loads(os.environ.get('capabilities'))
-print('capabilities: ', capabilities)
 MSG_LENGTH = 100
 MSG_HISTORY_LENGTH = 20
 speech_generation = True
 history_length = 0
 token_counter_history = 0
-allowDualSearch = os.environ.get('allowDualSearch')
-allowDualSearchWithMulipleProcessing = True
 
 minDocSimilarity = 200
 
