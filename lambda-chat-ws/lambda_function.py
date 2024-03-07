@@ -37,7 +37,6 @@ s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
 callLogTableName = os.environ.get('callLogTableName')
 profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
-rag_method = os.environ.get('rag_method', 'RetrievalPrompt') # RetrievalPrompt, RetrievalQA, ConversationalRetrievalChain
 
 opensearch_account = os.environ.get('opensearch_account')
 opensearch_passwd = os.environ.get('opensearch_passwd')
@@ -852,7 +851,7 @@ def priority_search(query, relevant_docs, bedrock_embeddings, minSimilarity):
 
     return docs
 
-def get_reference(docs, rag_method, rag_type, path, doc_prefix):
+def get_reference(docs, rag_type, path, doc_prefix):
     reference = "\n\nFrom\n"
     for i, doc in enumerate(docs):
         if doc['metadata']['translated_excerpt']:
@@ -994,8 +993,8 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
     global time_for_revise, time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs  # for debug
     time_for_revise = time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = 0
 
-    global time_for_rag_inference, time_for_rag_question_translation, time_for_rag_2nd_inference, time_for_rag_translation
-    time_for_rag_inference = time_for_rag_question_translation = time_for_rag_2nd_inference = time_for_rag_translation = 0
+    global time_for_rag_inference
+    time_for_rag_inference = 0
     
     vectorstore_opensearch = OpenSearchVectorSearch(
         index_name = "idx-*", # all
@@ -1124,7 +1123,7 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
             raise Exception ("Not able to request to LLM")    
 
         if len(selected_relevant_docs)>=1 and enableReference=='true':
-            reference = get_reference(selected_relevant_docs, rag_method, rag_type, path, doc_prefix)  
+            reference = get_reference(selected_relevant_docs, rag_type, path, doc_prefix)  
 
         end_time_for_inference = time.time()
         time_for_inference = end_time_for_inference - end_time_for_priority_search
@@ -1355,7 +1354,7 @@ def getResponse(connectionId, jsonBody):
                     msg = get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type)
                 
                 elif conv_type == 'qa':   # RAG
-                    print(f'rag_type: {rag_type}, rag_method: {rag_method}')
+                    print(f'rag_type: {rag_type}')
                     msg, reference = get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_embeddings, rag_type)
                     
                 elif conv_type == 'none':   # no prompt
@@ -1469,12 +1468,6 @@ def getResponse(connectionId, jsonBody):
             
             if time_for_rag_inference != 0:
                 statusMsg = statusMsg + f"\nRAG-Detail: {time_for_rag_inference:.2f}(Inference(KOR)), "
-            if time_for_rag_question_translation != 0:
-                statusMsg = statusMsg + f"{time_for_rag_question_translation:.2f}(Question(ENG)), "
-            if time_for_rag_2nd_inference != 0:
-                statusMsg = statusMsg + f"{time_for_rag_2nd_inference:.2f}(Inference(ENG)), "
-            if time_for_rag_translation != 0:
-                statusMsg = statusMsg + f"{time_for_rag_translation:.2f}(Doc Translation), "
 
             sendResultMessage(connectionId, requestId, msg+reference+speech+statusMsg)
         elif debugMessageMode=='true': # other cases

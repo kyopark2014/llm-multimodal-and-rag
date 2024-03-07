@@ -36,19 +36,18 @@ const supportedFormat = JSON.stringify(["pdf", "txt", "csv", "pptx", "ppt", "doc
 
 const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default)
 const enableParallelSummay = 'true';
-const rag_method = 'RetrievalPrompt' // RetrievalPrompt, RetrievalQA, ConversationalRetrievalChain
 
 const claude_Sonnet = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",   
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",   
     "maxOutputTokens": "8196"
   },
   {
     "bedrock_region": "us-east-1", // N.Virginia
     "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
     "maxOutputTokens": "8196"
   }
 ];
@@ -560,7 +559,6 @@ export class CdkLlmClaude3Stack extends cdk.Stack {
         path: 'https://'+distribution.domainName+'/',   
         roleArn: roleLambdaWebsocket.roleArn,
         debugMessageMode: debugMessageMode,
-        rag_method: rag_method,
         useParallelRAG: useParallelRAG,
         numberOfRelevantDocs: numberOfRelevantDocs,
         profile_of_LLMs:JSON.stringify(profile_of_LLMs),
