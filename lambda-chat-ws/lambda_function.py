@@ -251,7 +251,8 @@ def translate_text(chat, text):
     return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
 
 def general_conversation(connectionId, requestId, chat, query):
-    global time_for_inference, history_length, token_counter_history
+    global time_for_inference, history_length, token_counter_history    
+    time_for_inference = history_length = token_counter_history = 0
     
     if debugMessageMode == 'true':  
         start_time_for_inference = time.time()
@@ -294,7 +295,6 @@ def general_conversation(connectionId, requestId, chat, query):
         sendErrorMessage(connectionId, requestId, err_msg)    
         raise Exception ("Not able to request to LLM")
 
-    time_for_inference = 0
     if debugMessageMode == 'true':  
         chat_history = ""
         for dialogue_turn in history:
@@ -1004,10 +1004,10 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
         chat_history_all = extract_chat_history_from_memory()
         # print('chat_history_all: ', chat_history_all)
 
-        history_length = []
+        historys = []
         for history in chat_history_all:
-            history_length.append(len(history))
-        print('chat_history length: ', history_length)
+            historys.append(len(history))
+        print('chat_history: ', historys)
 
         relevant_length = len(relevant_context)
         token_counter_relevant_docs = llm.get_num_tokens(relevant_context)
@@ -1198,6 +1198,7 @@ def getResponse(connectionId, jsonBody):
                 msg  = "Debug messages will not be delivered to the client."
 
             elif text == 'clearMemory':
+                isControlMsg = True
                 memory_chain.clear()
                 map_chain[userId] = memory_chain
                 memory_chat.clear()                
@@ -1209,7 +1210,9 @@ def getResponse(connectionId, jsonBody):
             else:       
                 if conv_type == 'normal':      # normal
                     # msg = get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type)
-                    msg = general_conversation(connectionId, requestId, chat, text)                    
+                    msg = general_conversation(connectionId, requestId, chat, text)                          
+                    print(f"===> {str(history_length)}자 / {token_counter_history}토큰\n")
+                    
                 elif conv_type == 'translation':                    
                     msg = translate_text(chat, text)
                 
