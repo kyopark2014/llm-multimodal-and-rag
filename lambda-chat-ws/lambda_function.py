@@ -233,7 +233,7 @@ def isKorean(text):
         print('Not Korean: ', word_kor)
         return False
     
-def get_prompt(query, conv_type, rag_type):    
+def get_prompt(conv_type):    
     if conv_type == "translate":
         system = (
             "You are a helpful assistant that translates {input_language} to {output_language}."
@@ -1048,7 +1048,7 @@ def getResponse(connectionId, jsonBody):
     print(f'selected_LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
     # print('profile: ', profile)
     
-    llm = get_chat(profile_of_LLMs, selected_LLM)    
+    chat = get_chat(profile_of_LLMs, selected_LLM)    
     bedrock_embedding = get_embedding(profile_of_LLMs, selected_LLM)
 
     # allocate memory
@@ -1056,7 +1056,7 @@ def getResponse(connectionId, jsonBody):
         print('memory exist. reuse it!')        
         memory_chain = map_chain[userId]
         memory_chat = map_chat[userId]
-        conversation = ConversationChain(llm=llm, verbose=False, memory=memory_chat)
+        conversation = ConversationChain(llm=chat, verbose=False, memory=memory_chat)
         
     else: 
         print('memory does not exist. create new one!')
@@ -1068,7 +1068,7 @@ def getResponse(connectionId, jsonBody):
 
         allowTime = getAllowTime()
         load_chat_history(userId, allowTime, conv_type, rag_type)
-        conversation = ConversationChain(llm=llm, verbose=False, memory=memory_chat)
+        conversation = ConversationChain(llm=chat, verbose=False, memory=memory_chat)
  
     start = int(time.time())    
 
@@ -1128,7 +1128,7 @@ def getResponse(connectionId, jsonBody):
                 map_chain[userId] = memory_chain
                 memory_chat.clear()                
                 map_chat[userId] = memory_chat
-                conversation = ConversationChain(llm=llm, verbose=False, memory=memory_chat)
+                conversation = ConversationChain(llm=chat, verbose=False, memory=memory_chat)
                     
                 print('initiate the chat memory!')
                 msg  = "The chat memory was intialized in this session."
@@ -1143,7 +1143,7 @@ def getResponse(connectionId, jsonBody):
                         
                     prompt = get_prompt(conv_type)
                     
-                    chain = prompt | llm
+                    chain = prompt | chat
                     msg = chain.invoke(
                         {
                             "input_language": input_language,
@@ -1157,11 +1157,11 @@ def getResponse(connectionId, jsonBody):
                 
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
-                    msg, reference = get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type)
+                    msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type)
                     
                 elif conv_type == 'none':   # no prompt
                     try: 
-                        msg = llm(HUMAN_PROMPT+text+AI_PROMPT)
+                        msg = chat(HUMAN_PROMPT+text+AI_PROMPT)
                     except Exception:
                         err_msg = traceback.format_exc()
                         print('error message: ', err_msg)
@@ -1169,12 +1169,12 @@ def getResponse(connectionId, jsonBody):
                         sendErrorMessage(connectionId, requestId, err_msg)    
                         raise Exception ("Not able to request to LLM")
                 else: 
-                    msg = get_answer_from_PROMPT(llm, text, conv_type, connectionId, requestId)
+                    msg = get_answer_from_PROMPT(chat, text, conv_type, connectionId, requestId)
 
                 # token counter
                 if debugMessageMode=='true':
-                    token_counter_input = llm.get_num_tokens(text)
-                    token_counter_output = llm.get_num_tokens(msg)
+                    token_counter_input = chat.get_num_tokens(text)
+                    token_counter_output = chat.get_num_tokens(msg)
                     print(f"token_counter: question: {token_counter_input}, answer: {token_counter_output}")
                         
         elif type == 'document':
@@ -1191,7 +1191,7 @@ def getResponse(connectionId, jsonBody):
                     contexts.append(doc.page_content)
                 print('contexts: ', contexts)
 
-                msg = get_summary(llm, contexts)
+                msg = get_summary(chat, contexts)
                         
             elif file_type == 'pdf' or file_type == 'txt' or file_type == 'md' or file_type == 'pptx' or file_type == 'docx':
                 texts = load_document(file_type, object)
@@ -1216,7 +1216,7 @@ def getResponse(connectionId, jsonBody):
                     contexts.append(doc.page_content)
                 print('contexts: ', contexts)
 
-                msg = get_summary(llm, contexts)
+                msg = get_summary(chat, contexts)
             else:
                 msg = "uploaded file: "+object
                                                         
