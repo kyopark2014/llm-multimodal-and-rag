@@ -248,7 +248,7 @@ def translate_text(chat, text):
         output_language = "English"
                         
     chain = prompt | chat
-    translated_text = chain.invoke(
+    result = chain.invoke(
         {
             "input_language": input_language,
             "output_language": output_language,
@@ -256,7 +256,11 @@ def translate_text(chat, text):
         }
     )
     
-    print('translated text: ', translated_text.content)
+    print('translated text: ', result.content)
+    
+    msg = result.content
+    
+    msg = msg[msg.find('<result>')+9:len(msg)-10] # remove <result> tag
     
     return msg.content
 
