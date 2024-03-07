@@ -254,6 +254,9 @@ def general_conversation(chat, conversation, query):
     #chat_history = extract_chat_history_from_memory()
     #print('chat_history: ', chat_history)
     
+    history = memory_chain.load_memory_variables({})["chat_history"]
+    print('memory_chain: ', history)      
+    
     from langchain_core.messages import AIMessage, HumanMessage
 
     human_message = HumanMessage(content="What is the best way to learn programming?")
@@ -270,7 +273,8 @@ def general_conversation(chat, conversation, query):
     chain = prompt | chat
     result = chain.invoke(
         {
-            "history": [human_message, ai_message],
+            #"history": [human_message, ai_message],
+            "history": history,
             "input": query,
         }
     )
