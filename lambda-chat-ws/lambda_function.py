@@ -233,15 +233,30 @@ def isKorean(text):
         print('Not Korean: ', word_kor)
         return False
     
-def get_prompt(conv_type):    
-    if conv_type == "translate":
-        system = (
-            "You are a helpful assistant that translates {input_language} to {output_language}."
-        )
-        human = "{text}"
-        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+def translate_text(chat, text):
+    system = (
+        "You are a helpful assistant that translates {input_language} to {output_language}."
+    )
+    human = "{text}"
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
     
-    return prompt
+    if isKorean(text)==False :
+        input_language = "English"
+        output_language = "Korean"
+    else:
+        input_language = "Korean"
+        output_language = "English"
+                        
+    chain = prompt | chat
+    msg = chain.invoke(
+        {
+            "input_language": input_language,
+            "output_language": output_language,
+            "text": text,
+        }
+    )
+    
+    return msg
 
 def get_prompt_template(query, conv_type, rag_type):    
     if isKorean(query):
@@ -1133,24 +1148,8 @@ def getResponse(connectionId, jsonBody):
                 print('initiate the chat memory!')
                 msg  = "The chat memory was intialized in this session."
             else:       
-                if conv_type == 'translation':
-                    if isKorean(msg)==False :
-                        input_language = "English"
-                        output_language = "Korean"
-                    else:
-                        input_language = "Korean"
-                        output_language = "English"
-                        
-                    prompt = get_prompt(conv_type)
-                    
-                    chain = prompt | chat
-                    msg = chain.invoke(
-                        {
-                            "input_language": input_language,
-                            "output_language": output_language,
-                            "text": text,
-                        }
-                    )
+                if conv_type == 'translation':                    
+                    msg = translate_text(chat, text)
                     
                 elif conv_type == 'normal' or conv_type == 'funny':      # normal
                     msg = get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type)
