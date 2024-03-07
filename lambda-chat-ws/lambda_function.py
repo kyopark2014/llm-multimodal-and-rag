@@ -325,37 +325,38 @@ def revise_question(connectionId, requestId, chat, query):
         system = (
             ""
         )  
-        human = """이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 새로운 질문은 원래 질문의 중요한 단어를 반드시 포함합니다.
-            <question>            
-            {question}
-            </question>"""
+        human = """이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 새로운 질문은 원래 질문의 중요한 단어를 반드시 포함합니다. 결과는 <result> tag를 붙여주세요.
+        
+        <question>            
+        {question}
+        </question>"""
         
     else: 
         system = (
             ""
         )
-        human = """rephrase the follow up <question> to be a standalone question.
-            <question>            
-            {question}
-            </question>"""
-        
-    
+        human = """rephrase the follow up <question> to be a standalone question.  Put it in <result> tags.
+        <question>            
+        {question}
+        </question>"""
+            
     prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
     print('prompt: ', prompt)
     
     history = memory_chain.load_memory_variables({})["chat_history"]
     print('memory_chain: ', history)
                 
-    chain = prompt | chat
-    
+    chain = prompt | chat    
     try: 
-        stream = chain.invoke(
+        result = chain.invoke(
             {
                 "history": history,
                 "question": query,
             }
         )
-        revised_question = stream.content                            
+        generated_question = result.content         
+        
+        revised_question = generated_question[generated_question.find('<result>')+8:len(generated_question)-9] # remove <result> tag                   
         print('revised_question: ', revised_question)
         
     except Exception:
@@ -1383,7 +1384,7 @@ def getResponse(connectionId, jsonBody):
         #print('resp, ', resp)
 
     if debugMessageMode=='true' and isControlMsg==False: 
-        statusMsg = f"\n[통계]\nRegion: {bedrock_region}\nModelId: {modelId}\n"
+        statusMsg = f"\n\n[통계]\nRegion: {bedrock_region}\nModelId: {modelId}\n"
         if token_counter_input:
             statusMsg = statusMsg + f"Question: {str(len(text))}자 / {token_counter_input}토큰\nAnswer: {str(len(msg))}자 / {token_counter_output}토큰\n"
             
