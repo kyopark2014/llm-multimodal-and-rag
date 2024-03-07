@@ -1229,7 +1229,6 @@ def getResponse(connectionId, jsonBody):
     start = int(time.time())    
 
     msg = ""
-    reference = ""
     isControlMsg = False
     
     if type == 'text' and body[:11] == 'list models':
