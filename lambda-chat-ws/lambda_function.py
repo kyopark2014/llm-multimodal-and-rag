@@ -32,6 +32,11 @@ from langchain.schema import BaseMessage
 from langchain_community.chat_models import BedrockChat
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
+from langchain.prompts import (
+    ChatPromptTemplate,
+    HumanMessagePromptTemplate,
+    MessagesPlaceholder,
+)
 
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -122,39 +127,6 @@ def get_chat(profile_of_LLMs, selected_LLM):
         model_kwargs=parameters,
     )        
     
-    
-    system = (
-        "You are a helpful assistant that translates {input_language} to {output_language}."
-    )
-    human = "{text}"
-    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-
-    chain = prompt | chat
-    msg = chain.invoke(
-        {
-            "input_language": "English",
-            "output_language": "Korean",
-            "text": "I love Python",
-        }
-    )
-    print('invoked msg: ', msg)
-    
-    """
-    from langchain_core.prompts import ChatPromptTemplate
-
-    template = ChatPromptTemplate.from_messages([
-        ("system", "You are a helpful AI bot. Your name is {name}."),
-        ("human", "Hello, how are you doing?"),
-        ("ai", "I'm doing well, thanks!"),
-        ("human", "{user_input}"),
-    ])
-
-    messages = template.format_messages(
-        name="Bob",
-        user_input="What is your name?"
-    )
-    """
-    
     return chat
 
 def get_embedding(profile_of_LLMs, selected_LLM):
@@ -238,7 +210,9 @@ def translate_text(chat, text):
         "You are a helpful assistant that translates {input_language} to {output_language}. Put it in <result> tags."
     )
     human = "{text}"
+    
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
     
     if isKorean(text)==False :
         input_language = "English"
@@ -260,6 +234,35 @@ def translate_text(chat, text):
     print('translated text: ', msg)
     
     return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
+
+def general_conversation(chat, conversation, text):
+    if isKorean(text)==True :
+        system = (
+            "다음의 Human과 Assistant의 친근한 이전 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+        )
+    else: 
+        system = (
+            "Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor."
+        )
+    
+    human = "{input}"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
+    print('prompt: ', prompt)
+    
+    chain = prompt | chat
+    
+    chat_history = extract_chat_history_from_memory()
+                            
+    msg = prompt.format_prompt(
+        history=chat_history, input=text
+    ).to_messages()
+    
+    #msg = result.content
+    print('msg: ', msg)
+    
+    #return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
+    return msg
 
 def get_prompt_template(query, conv_type, rag_type):    
     if isKorean(query):
@@ -1155,7 +1158,8 @@ def getResponse(connectionId, jsonBody):
                     msg = translate_text(chat, text)
                     
                 elif conv_type == 'normal' or conv_type == 'funny':      # normal
-                    msg = get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type)
+                    # msg = get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type)
+                    msg = general_conversation(chat, conversation, text)
                 
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
