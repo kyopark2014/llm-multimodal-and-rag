@@ -152,6 +152,7 @@ print('connection_url: ', connection_url)
 HUMAN_PROMPT = "\n\nHuman:"
 AI_PROMPT = "\n\nAssistant:"
 def get_parameter(model_type, maxOutputTokens):
+    """
     if model_type=='claude3':
         return {
             "max_tokens":maxOutputTokens,     
@@ -163,6 +164,14 @@ def get_parameter(model_type, maxOutputTokens):
     elif model_type=='claude':
         return {
             "max_tokens_to_sample":maxOutputTokens, # 8k    
+            "temperature":0.1,
+            "top_k":250,
+            "top_p":0.9,
+            "stop_sequences": [HUMAN_PROMPT]            
+        }
+    """
+    return {
+            "max_tokens":maxOutputTokens,     
             "temperature":0.1,
             "top_k":250,
             "top_p":0.9,
@@ -195,6 +204,15 @@ def get_llm(profile_of_LLMs, selected_LLM):
     parameters = get_parameter(profile['model_type'], int(profile['maxOutputTokens']))
     # print('parameters: ', parameters)
 
+    llm = BedrockChat(
+        model_id=modelId,
+        client=boto3_bedrock, 
+        streaming=True,
+        callbacks=[StreamingStdOutCallbackHandler()],
+        model_kwargs=parameters,
+    )
+    
+    """
     if model_type == 'claude3':
         llm = BedrockChat(
             model_id=modelId,
@@ -211,6 +229,7 @@ def get_llm(profile_of_LLMs, selected_LLM):
             streaming=True,
             callbacks=[StreamingStdOutCallbackHandler()],
             model_kwargs=parameters)
+    """
         
     return llm
 
