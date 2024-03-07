@@ -235,42 +235,6 @@ def get_prompt_template(query, conv_type, rag_type):
                         
             Assistant:"""
 
-        elif conv_type == "sentiment":  # for sentiment, input
-            prompt_template = """\n\nHuman: 아래의 <example> review와 Extracted Topic and sentiment 인 <result>가 있습니다.
-            <example>
-            객실은 작지만 깨끗하고 편안합니다. 프론트 데스크는 정말 분주했고 체크인 줄도 길었지만, 직원들은 프로페셔널하고 매우 유쾌하게 각 사람을 응대했습니다. 우리는 다시 거기에 머물것입니다.
-            </example>
-            <result>
-            청소: 긍정적, 
-            서비스: 긍정적
-            </result>
-
-            아래의 <review>에 대해서 위의 <result> 예시처럼 Extracted Topic and sentiment 을 만들어 주세요..
-
-            <review>
-            {input}
-            </review>
-
-            Assistant:"""
-
-        elif conv_type == "extraction":  # information extraction
-            prompt_template = """\n\nHuman: 다음 텍스트에서 이메일 주소를 정확하게 복사하여 한 줄에 하나씩 적어주세요. 입력 텍스트에 정확하게 쓰여있는 이메일 주소만 적어주세요. 텍스트에 이메일 주소가 없다면, "N/A"라고 적어주세요. 또한 결과는 <result> tag를 붙여주세요.
-
-            <text>
-            {input}
-            </text>
-
-            Assistant:"""
-
-        elif conv_type == "pii":  # removing PII(personally identifiable information) containing name, phone number, address
-            prompt_template = """\n\nHuman: 아래의 <text>에서 개인식별정보(PII)를 모두 제거하여 외부 계약자와 안전하게 공유할 수 있도록 합니다. 이름, 전화번호, 주소, 이메일을 XXX로 대체합니다. 또한 결과는 <result> tag를 붙여주세요.
-            
-            <text>
-            {input}
-            </text>
-        
-            Assistant:"""
-
         elif conv_type == "grammar":  # Checking Grammatical Errors
             prompt_template = """\n\nHuman: 다음의 <article>에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요.
 
@@ -280,93 +244,6 @@ def get_prompt_template(query, conv_type, rag_type):
             
             Assistant: """
 
-        elif conv_type == "step-by-step":  # compelex question 
-            prompt_template = """\n\nHuman: 다음은 Human과 Assistant의 친근한 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. 아래 문맥(context)을 참조했음에도 답을 알 수 없다면, 솔직히 모른다고 말합니다. 여기서 Assistant의 이름은 서연입니다.
-
-            {input}
-
-            Assistant: 단계별로 생각할까요?
-
-            Human: 예, 그렇게하세요.
-            
-            Assistant:"""
-
-        elif conv_type == "like-child":  # Child Conversation (few shot)
-            prompt_template = """\n\nHuman: 다음 대화를 완성하기 위해 "A"로 말하는 다음 줄을 작성하세요. Assistant는 유치원 선생님처럼 대화를 합니다.
-            
-            Q: 이빨 요정은 실제로 있을까?
-            A: 물론이죠, 오늘 밤 당신의 이를 감싸서 베개 밑에 넣어두세요. 아침에 뭔가 당신을 기다리고 있을지도 모릅니다.
-            Q: {input}
-
-            Assistant:"""      
-
-        elif conv_type == "timestamp-extraction":
-            prompt_template = """\n\nHuman: 아래의 <text>는 시간을 포함한 텍스트입니다. 친절한 AI Assistant로서 시간을 추출하여 아래를 참조하여 <example>과 같이 정리해주세요.
-            
-            - 년도를 추출해서 <year>/<year>로 넣을것 
-            - 월을 추출해서 <month>/<month>로 넣을것
-            - 일을 추출해서 <day>/<day>로 넣을것
-            - 시간을 추출해서 24H으로 정리해서 <hour>/<hour>에 넣을것
-            - 분을 추출해서 <minute>/<minute>로 넣을것
-
-            이때의 예제는 아래와 같습니다.
-            <example>
-            2022년 11월 3일 18시 26분
-            </example>
-            <result>
-                <year>2022</year>
-                <month>11</month>
-                <day>03</day>
-                <hour>18</hour>
-                <minute>26</minute>
-            </result>
-
-            결과에 개행문자인 "\n"과 글자 수와 같은 부가정보는 절대 포함하지 마세요.
-
-            <text>
-            {input}
-            </text>
-
-            Assistant:"""  
-
-        elif conv_type == "funny": # for free conversation
-            prompt_template = """\n\nHuman: 다음의 <history>는 Human과 Assistant의 친근한 이전 대화입니다. 모든 대화는 반말로하여야 합니다. Assistant의 이름은 서서이고 10살 여자 어린이 상상력이 풍부하고 재미있는 대화를 합니다. 때로는 바보같은 답변을 해서 재미있게 해줍니다.
-
-            <history>
-            {history}
-            </history>
-
-            <question>            
-            {input}
-            </question>
-            
-            Assistant:"""     
-
-        elif conv_type == "get-weather":  # getting weather (function calling)
-            prompt_template = """\n\nHuman: In this environment you have access to a set of tools you can use to answer the user's question.
-
-            You may call them like this. Only invoke one function at a time and wait for the results before invoking another function:
-            
-            <function_calls>
-            <invoke>
-            <tool_name>$TOOL_NAME</tool_name>
-            <parameters>
-            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
-            ...
-            </parameters>
-            </invoke>
-            </function_calls>
-
-            Here are the tools available:
-            <tools>
-            {tools_string}
-            </tools>
-
-            Human:
-            {user_input}
-
-            Assistant:"""                  
-                
         else:
             prompt_template = """\n\nHuman: 다음은 Human과 Assistant의 친근한 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant는 모르는 질문을 받으면 솔직히 모른다고 말합니다. 여기서 Assistant의 이름은 서연입니다. 
         
@@ -413,43 +290,6 @@ def get_prompt_template(query, conv_type, rag_type):
             </article>
                         
             Assistant:"""
-        
-        elif conv_type == "sentiment":  # for sentiment, input
-            prompt_template = """\n\nHuman: Here is <example> review and extracted topics and sentiments as <result>.
-
-            <example>
-            The room was small but clean and comfortable. The front desk was really busy and the check-in line was long, but the staff were professional and very pleasant with each person they helped. We will stay there again.
-            </example>
-
-            <result>
-            Cleanliness: Positive, 
-            Service: Positive
-            </result>
-
-            <review>
-            {input}
-            </review>
-            
-            Assistant:"""
-
-        elif conv_type == "pii":  # removing PII(personally identifiable information) containing name, phone number, address
-            prompt_template = """\n\nHuman: We want to de-identify some text by removing all personally identifiable information from this text so that it can be shared safely with external contractors.
-            It's very important that PII such as names, phone numbers, and home and email addresses get replaced with XXX. Put it in <result> tags.
-
-            Here is the text, inside <text></text> XML tags.
-
-            <text>
-            {input}
-            </text>
-
-            Assistant:"""
-
-        elif conv_type == "extraction":  # for sentiment, input
-            prompt_template = """\n\nHuman: Please precisely copy any email addresses from the following text and then write them, one per line.  Only write an email address if it's precisely spelled out in the input text.  If there are no email addresses in the text, write "N/A".  Do not say anything else.  Put it in <result> tags.
-
-            {input}
-
-            Assistant:"""
 
         elif conv_type == "grammar":  # Checking Grammatical Errors
             prompt_template = """\n\nHuman: Here is an article, contained in <article> tags:
@@ -461,39 +301,6 @@ def get_prompt_template(query, conv_type, rag_type):
             Please identify any grammatical errors in the article. Also, add the fixed article at the end of answer.
             
             Assistant: """
-
-        elif conv_type == "step-by-step":  # compelex question 
-            prompt_template = """\n\nHuman: Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor.
-            
-            {input}
-
-            Assistant: Can I think step by step?
-
-            Human: Yes, please do.
-
-            Assistant:"""
-        
-        elif conv_type == "like-child":  # Child Conversation (few shot)
-            prompt_template = """\n\nHuman: Please complete the conversation by writing the next line, speaking as "A". You will be acting as a kindergarten teacher.
-
-            Q: Is the tooth fairy real?
-            A: Of course, sweetie. Wrap up your tooth and put it under your pillow tonight. There might be something waiting for you in the morning.
-            Q: {input}
-
-            Assistant:"""       
-
-        elif conv_type == "funny": # for free conversation
-            prompt_template = """\n\nHuman: 다음의 <history>는 Human과 Assistant의 친근한 이전 대화입니다. Assistant의 이름은 서서이고 10살 여자 어린이입니다. 상상력이 풍부하고 재미있는 대화를 잘합니다. 때론 바보같은 답변을 합니다.
-
-            <history>
-            {history}
-            </history>
-
-            <question>            
-            {input}
-            </question>
-            
-            Assistant:"""     
 
         else: # normal
             prompt_template = """\n\nHuman: Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor named Seoyeon.
