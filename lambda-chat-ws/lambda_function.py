@@ -959,6 +959,7 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
     ) 
     
     reference = ""
+    relevant_context = ""
     
     start_time_for_revise = time.time()
 
@@ -1043,7 +1044,6 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
         print('processing time for priority search: ', time_for_priority_search)
         number_of_relevant_docs = len(selected_relevant_docs)
 
-        relevant_context = ""
         for document in selected_relevant_docs:
             if document['metadata']['translated_excerpt']:
                 content = document['metadata']['translated_excerpt']
