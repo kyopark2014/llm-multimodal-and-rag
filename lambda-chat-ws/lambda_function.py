@@ -988,10 +988,13 @@ def getResponse(connectionId, jsonBody):
     global map_chain, map_chat, memory_chat, memory_chain, debugMessageMode, selected_LLM, allowDualSearch
         
     profile_of_LLMs = get_profile(function_type)
+    print('length of profile: ', len(profile_of_LLMs))
+    print ('selected_LLM: ', selected_LLM)
     
     # Multi-region LLM
     if selected_LLM >= len(profile_of_LLMs)-1:
-        selected_LLM = 0
+        selected_LLM = 0       
+        print ('new selected_LLM: ', selected_LLM) 
         
     profile = profile_of_LLMs[selected_LLM]
     bedrock_region =  profile['bedrock_region']
