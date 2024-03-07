@@ -1004,6 +1004,8 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
     # retrieve relevant documents from RAG
     selected_relevant_docs = retrieve_docs_from_RAG(chat, text, connectionId, requestId, bedrock_embedding, rag_type)
     
+    # get context
+    relevant_context = ""
     number_of_relevant_docs = len(selected_relevant_docs)    
     for document in selected_relevant_docs:
         content = document['metadata']['excerpt']
