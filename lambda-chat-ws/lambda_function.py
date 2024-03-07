@@ -1494,7 +1494,7 @@ def getResponse(connectionId, jsonBody):
         selected_LLM = selected_LLM + 1
 
     if debugMessageMode=='true': # other cases
-        statusMsg = f"\n[통계]\nRegion: {bedrock_region}\n"
+        statusMsg = f"\n[통계]\nRegion: {bedrock_region}\nModelId: {modelId}"
         if token_counter_input:
             statusMsg = statusMsg + f"Question: {str(len(text))}자 / {token_counter_input}토큰\nAnswer: {str(len(msg))}자 / {token_counter_output}토큰\n"
             
