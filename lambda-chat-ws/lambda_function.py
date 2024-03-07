@@ -1290,10 +1290,13 @@ def getResponse(connectionId, jsonBody):
     
     if function_type == 'normal-claude3':
         profile_of_LLMs = claude3_sonnet
+        selected_LLM = 0
     elif function_type == 'normal-claude2':
         profile_of_LLMs = claude2
+        selected_LLM = 0
     elif function_type == 'normal-claude_instant':
         profile_of_LLMs = claude_instant
+        selected_LLM = 0
     else:
         profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
 
@@ -1488,11 +1491,6 @@ def getResponse(connectionId, jsonBody):
             raise Exception ("Not able to write into dynamodb")        
         #print('resp, ', resp)
 
-    if selected_LLM >= len(profile_of_LLMs)-1:
-        selected_LLM = 0
-    else:
-        selected_LLM = selected_LLM + 1
-
     if debugMessageMode=='true': # other cases
         statusMsg = f"\n[통계]\nRegion: {bedrock_region}\nModelId: {modelId}\n"
         if token_counter_input:
@@ -1507,6 +1505,11 @@ def getResponse(connectionId, jsonBody):
         statusMsg = statusMsg + f"{elapsed_time:.2f}(전체)"
             
         sendResultMessage(connectionId, requestId, msg+statusMsg)
+        
+    if selected_LLM >= len(profile_of_LLMs)-1:
+        selected_LLM = 0
+    else:
+        selected_LLM = selected_LLM + 1
 
     return msg, reference
 
