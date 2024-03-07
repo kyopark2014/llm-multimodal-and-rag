@@ -321,26 +321,26 @@ def revise_question(connectionId, requestId, chat, query):
     global history_length, token_counter_history    
     history_length = token_counter_history = 0
         
-    if isKorean(query)==True :        
+    if isKorean(query)==True :      
+        system = (
+            ""
+        )  
         human = """이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 새로운 질문은 원래 질문의 중요한 단어를 반드시 포함합니다.
             <question>            
             {question}
             </question>"""
-        system = (
-            "새로운질문"
-        )
-    else: 
         
+    else: 
+        system = (
+            ""
+        )
         human = """rephrase the follow up <question> to be a standalone question.
             <question>            
             {question}
             </question>"""
-        system = (
-            "Standalone question"
-        )
+        
     
-    #prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
-    prompt = ChatPromptTemplate.from_messages([MessagesPlaceholder(variable_name="history"),("human", human),("system", system)])
+    prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
     print('prompt: ', prompt)
     
     history = memory_chain.load_memory_variables({})["chat_history"]
