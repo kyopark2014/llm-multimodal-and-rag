@@ -31,6 +31,7 @@ from langchain.schema import BaseMessage
 
 from langchain_community.chat_models import BedrockChat
 from langchain_core.messages import HumanMessage
+from langchain_core.prompts import ChatPromptTemplate
 
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -87,7 +88,7 @@ map_chain = dict() # For RAG
 map_chat = dict() # For general conversation  
 
 # Multi-LLM
-def get_llm(profile_of_LLMs, selected_LLM):
+def get_chat(profile_of_LLMs, selected_LLM):
     profile = profile_of_LLMs[selected_LLM]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
@@ -113,14 +114,48 @@ def get_llm(profile_of_LLMs, selected_LLM):
     }
     # print('parameters: ', parameters)
 
-    llm = BedrockChat(
+    chat = BedrockChat(
         model_id=modelId,
         client=boto3_bedrock, 
         streaming=True,
         callbacks=[StreamingStdOutCallbackHandler()],
         model_kwargs=parameters,
     )        
-    return llm
+    
+    
+    system = (
+        "You are a helpful assistant that translates {input_language} to {output_language}."
+    )
+    human = "{text}"
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+
+    chain = prompt | chat
+    msg = chain.invoke(
+        {
+            "input_language": "English",
+            "output_language": "Korean",
+            "text": "I love Python",
+        }
+    )
+    print('invoked msg: ', msg)
+    
+    """
+    from langchain_core.prompts import ChatPromptTemplate
+
+    template = ChatPromptTemplate.from_messages([
+        ("system", "You are a helpful AI bot. Your name is {name}."),
+        ("human", "Hello, how are you doing?"),
+        ("ai", "I'm doing well, thanks!"),
+        ("human", "{user_input}"),
+    ])
+
+    messages = template.format_messages(
+        name="Bob",
+        user_input="What is your name?"
+    )
+    """
+    
+    return chat
 
 def get_embedding(profile_of_LLMs, selected_LLM):
     profile = profile_of_LLMs[selected_LLM]
@@ -197,6 +232,16 @@ def isKorean(text):
     else:
         print('Not Korean: ', word_kor)
         return False
+    
+def get_prompt(query, conv_type, rag_type):    
+    if conv_type == "translate":
+        system = (
+            "You are a helpful assistant that translates {input_language} to {output_language}."
+        )
+        human = "{text}"
+        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    
+    return prompt
 
 def get_prompt_template(query, conv_type, rag_type):    
     if isKorean(query):
@@ -903,6 +948,7 @@ def get_answer_using_ConversationChain(text, conversation, conv_type, connection
     
     start_time_for_inference = time.time()
     conversation.prompt = get_prompt_template(text, conv_type, rag_type)
+        
     try: 
         isTyping(connectionId, requestId)    
         stream = conversation.predict(input=text)
@@ -912,7 +958,7 @@ def get_answer_using_ConversationChain(text, conversation, conv_type, connection
     except Exception:
         err_msg = traceback.format_exc()
         print('error message: ', err_msg)        
-        
+            
         sendErrorMessage(connectionId, requestId, err_msg)    
         raise Exception ("Not able to request to LLM")
 
@@ -920,9 +966,9 @@ def get_answer_using_ConversationChain(text, conversation, conv_type, connection
         chats = memory_chat.load_memory_variables({})
         chat_history_all = chats['history']
         # print('chat_history_all: ', chat_history_all)
-        
+            
         print('chat_history length: ', len(chat_history_all))
-        
+            
     end_time_for_inference = time.time()
     time_for_inference = end_time_for_inference - start_time_for_inference
 
@@ -985,7 +1031,7 @@ def getResponse(connectionId, jsonBody):
             print('rag_type: ', rag_type)
 
     global enableReference
-    global map_chain, map_chat, memory_chat, memory_chain, debugMessageMode, selected_LLM, allowDualSearch
+    global map_chain, map_chat, memory_chat, memory_chain, debugMessageMode, selected_LLM
         
     profile_of_LLMs = get_profile(function_type)
     print('length of profile: ', len(profile_of_LLMs))
@@ -1002,7 +1048,7 @@ def getResponse(connectionId, jsonBody):
     print(f'selected_LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
     # print('profile: ', profile)
     
-    llm = get_llm(profile_of_LLMs, selected_LLM)    
+    llm = get_chat(profile_of_LLMs, selected_LLM)    
     bedrock_embedding = get_embedding(profile_of_LLMs, selected_LLM)
 
     # allocate memory
@@ -1087,7 +1133,26 @@ def getResponse(connectionId, jsonBody):
                 print('initiate the chat memory!')
                 msg  = "The chat memory was intialized in this session."
             else:       
-                if conv_type == 'normal' or conv_type == 'funny':      # normal
+                if conv_type == 'translation':
+                    if isKorean(msg)==False :
+                        input_language = "English"
+                        output_language = "Korean"
+                    else:
+                        input_language = "Korean"
+                        output_language = "English"
+                        
+                    prompt = get_prompt(conv_type)
+                    
+                    chain = prompt | llm
+                    msg = chain.invoke(
+                        {
+                            "input_language": input_language,
+                            "output_language": output_language,
+                            "text": text,
+                        }
+                    )
+                    
+                elif conv_type == 'normal' or conv_type == 'funny':      # normal
                     msg = get_answer_using_ConversationChain(text, conversation, conv_type, connectionId, requestId, rag_type)
                 
                 elif conv_type == 'qa':   # RAG
