@@ -84,14 +84,7 @@ print('connection_url: ', connection_url)
 HUMAN_PROMPT = "\n\nHuman:"
 AI_PROMPT = "\n\nAssistant:"
 def get_parameter(model_type, maxOutputTokens):
-    if model_type=='titan': 
-        return {
-            "maxTokenCount":1024,
-            "stopSequences":[],
-            "temperature":0,
-            "topP":0.9
-        }
-    elif model_type=='claude':
+    if model_type=='claude':
         return {
             "max_tokens_to_sample":maxOutputTokens, # 8k    
             "temperature":0.1,
@@ -109,7 +102,9 @@ def get_llm(profile_of_LLMs, selected_LLM):
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-        
+    
+    model_type = profile['model_type']
+    
     # bedrock   
     boto3_bedrock = boto3.client(
         service_name='bedrock-runtime',
@@ -123,13 +118,23 @@ def get_llm(profile_of_LLMs, selected_LLM):
     parameters = get_parameter(profile['model_type'], int(profile['maxOutputTokens']))
     # print('parameters: ', parameters)
 
-    # langchain for bedrock
-    llm = Bedrock(
-        model_id=modelId, 
-        client=boto3_bedrock, 
-        # streaming=True,
-        # callbacks=[StreamingStdOutCallbackHandler()],
-        model_kwargs=parameters)
+    if model_type == 'claude3':
+        llm = BedrockChat(
+            model_id=modelId,
+            client=boto3_bedrock, 
+            streaming=True,
+            callbacks=[StreamingStdOutCallbackHandler()],
+            model_kwargs=parameters,
+        )
+    else:
+        # langchain for bedrock
+        llm = Bedrock(
+            model_id=modelId, 
+            client=boto3_bedrock, 
+            streaming=True,
+            callbacks=[StreamingStdOutCallbackHandler()],
+            model_kwargs=parameters)
+        
     return llm
 
 def sendMessage(id, body):

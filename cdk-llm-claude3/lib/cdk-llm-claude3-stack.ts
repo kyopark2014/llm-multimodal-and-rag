@@ -40,13 +40,13 @@ const enableParallelSummay = 'true';
 const claude_Sonnet = [
   {
     "bedrock_region": "us-west-2", // Oregon
-    "model_type": "claude",
+    "model_type": "claude3",
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",   
     "maxOutputTokens": "8196"
   },
   {
     "bedrock_region": "us-east-1", // N.Virginia
-    "model_type": "claude",
+    "model_type": "claude3",
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
     "maxOutputTokens": "8196"
   }
