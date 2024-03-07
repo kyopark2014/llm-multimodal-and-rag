@@ -251,7 +251,7 @@ def translate_text(chat, text):
     return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
 
 def general_conversation(connectionId, requestId, chat, query):
-    global time_for_inference, history_length
+    global time_for_inference, history_length, token_counter_history
     
     if debugMessageMode == 'true':  
         start_time_for_inference = time.time()
@@ -294,17 +294,23 @@ def general_conversation(connectionId, requestId, chat, query):
         sendErrorMessage(connectionId, requestId, err_msg)    
         raise Exception ("Not able to request to LLM")
 
+    time_for_inference = 0
     if debugMessageMode == 'true':  
         chat_history = ""
         for dialogue_turn in history:
-            print('type: ', dialogue_turn.type)
-            print('content: ', dialogue_turn.content)
+            #print('type: ', dialogue_turn.type)
+            #print('content: ', dialogue_turn.content)
             
             dialog = f"{dialogue_turn.type}: {dialogue_turn.content}\n"            
             chat_history = chat_history + dialog
                 
         history_length = len(chat_history)
         print('chat_history length: ', history_length)
+        
+        token_counter_history = 0
+        if chat_history:
+            token_counter_history = chat.get_num_tokens(chat_history)
+            print('token_size of history: ', token_counter_history)
         
         end_time_for_inference = time.time()
         time_for_inference = end_time_for_inference - start_time_for_inference
