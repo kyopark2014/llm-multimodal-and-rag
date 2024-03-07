@@ -256,6 +256,8 @@ def translate_text(chat, text):
         }
     )
     
+    print('translated message: ', msg)
+    
     return msg
 
 def get_prompt_template(query, conv_type, rag_type):    
