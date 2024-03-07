@@ -324,26 +324,26 @@ def revise_question(connectionId, requestId, chat, query):
     if debugMessageMode == 'true':  
         start_time_for_inference = time.time()
     
-    if isKorean(query)==True :
-        system = (
-            "다음은 Human과 Assistant의 대화입니다."
-        )
-        human = """이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 
+    if isKorean(query)==True :        
+        human = """이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 새로운 질문은 원래 질문의 중요한 단어를 반드시 포함합니다.
             <question>            
             {question}
-            </question>
-            새로운 질문:"""
-    else: 
+            </question>"""
         system = (
-            "using <history>, "
+            "새로운질문"
         )
+    else: 
+        
         human = """rephrase the follow up <question> to be a standalone question.
             <question>            
             {question}
-            </question>
-            Standalone question:"""
+            </question>"""
+        system = (
+            "Standalone question"
+        )
     
-    prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
+    #prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
+    prompt = ChatPromptTemplate.from_messages([MessagesPlaceholder(variable_name="history"),("human", human)],("system", system))
     print('prompt: ', prompt)
     
     history = memory_chain.load_memory_variables({})["chat_history"]
