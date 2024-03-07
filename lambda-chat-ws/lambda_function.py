@@ -1238,35 +1238,16 @@ def getResponse(connectionId, jsonBody):
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'selected_LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    # print('profile: ', profile)
+    print('profile: ', profile)
     
-    # bedrock   
-    boto3_bedrock = boto3.client(
-        service_name='bedrock-runtime',
-        region_name=bedrock_region,
-        config=Config(
-            retries = {
-                'max_attempts': 30
-            }            
-        )
-    )
-    parameters = get_parameter(profile['model_type'], int(profile['maxOutputTokens']))
-    print('parameters: ', parameters)
-
-    # langchain for bedrock
-    llm = Bedrock(
-        model_id=modelId, 
-        client=boto3_bedrock, 
-        streaming=True,
-        callbacks=[StreamingStdOutCallbackHandler()],
-        model_kwargs=parameters)
+    llm = get_llm(profile_of_LLMs, selected_LLM)
 
     # embedding for RAG
-    bedrock_embeddings = BedrockEmbeddings(
-        client=boto3_bedrock,
-        region_name = bedrock_region,
-        model_id = 'amazon.titan-embed-text-v1' 
-    )    
+    #bedrock_embeddings = BedrockEmbeddings(
+    #    client=boto3_bedrock,
+    #    region_name = bedrock_region,
+    #    model_id = 'amazon.titan-embed-text-v1' 
+    #)    
 
     # create memory
     if userId in map_chat or userId in map_chain:  
