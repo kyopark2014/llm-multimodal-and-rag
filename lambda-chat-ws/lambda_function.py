@@ -320,10 +320,7 @@ def general_conversation(connectionId, requestId, chat, query):
 def revise_question(connectionId, requestId, chat, query):    
     global history_length, token_counter_history    
     history_length = token_counter_history = 0
-    
-    if debugMessageMode == 'true':  
-        start_time_for_inference = time.time()
-    
+        
     if isKorean(query)==True :        
         human = """이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 새로운 질문은 원래 질문의 중요한 단어를 반드시 포함합니다.
             <question>            
@@ -343,7 +340,7 @@ def revise_question(connectionId, requestId, chat, query):
         )
     
     #prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
-    prompt = ChatPromptTemplate.from_messages([MessagesPlaceholder(variable_name="history"),("human", human)],("system", system))
+    prompt = ChatPromptTemplate.from_messages([MessagesPlaceholder(variable_name="history"),("human", human),("system", system)])
     print('prompt: ', prompt)
     
     history = memory_chain.load_memory_variables({})["chat_history"]
