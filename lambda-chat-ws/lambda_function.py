@@ -960,6 +960,7 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
     
     reference = ""
     relevant_context = ""
+    msg = ""
     
     start_time_for_revise = time.time()
 
@@ -1053,23 +1054,23 @@ def get_answer_using_RAG(llm, text, conv_type, connectionId, requestId, bedrock_
             relevant_context = relevant_context + content + "\n\n"
         print('relevant_context: ', relevant_context)
 
-        try: 
-            isTyping(connectionId, requestId)
-            stream = llm(PROMPT.format(context=relevant_context, question=revised_question))
-            msg = readStreamMsg(connectionId, requestId, stream)      
-            # msg = msg.replace(" ","&nbsp;")        
-        except Exception:
-            err_msg = traceback.format_exc()
-            print('error message: ', err_msg)       
-            sendErrorMessage(connectionId, requestId, err_msg)    
-            raise Exception ("Not able to request to LLM")    
+    try: 
+        isTyping(connectionId, requestId)
+        stream = llm(PROMPT.format(context=relevant_context, question=revised_question))
+        msg = readStreamMsg(connectionId, requestId, stream)      
+        # msg = msg.replace(" ","&nbsp;")        
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)       
+        sendErrorMessage(connectionId, requestId, err_msg)    
+        raise Exception ("Not able to request to LLM")    
 
-        if len(selected_relevant_docs)>=1 and enableReference=='true':
-            reference = get_reference(selected_relevant_docs)  
+    if len(selected_relevant_docs)>=1 and enableReference=='true':
+        reference = get_reference(selected_relevant_docs)  
 
-        end_time_for_inference = time.time()
-        time_for_inference = end_time_for_inference - end_time_for_priority_search
-        print('processing time for inference: ', time_for_inference)
+    end_time_for_inference = time.time()
+    time_for_inference = end_time_for_inference - end_time_for_priority_search
+    print('processing time for inference: ', time_for_inference)
     
     global relevant_length, token_counter_relevant_docs
     
