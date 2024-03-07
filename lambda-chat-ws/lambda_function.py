@@ -1017,6 +1017,7 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
     # query using RAG context
     msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, revised_question)
 
+    reference = ""
     if len(selected_relevant_docs)>=1 and enableReference=='true':
         reference = get_reference(selected_relevant_docs)  
 
