@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Bedrock</title>
+        <link rel="stylesheet", href="login.css">
+    </head>
+    <body>
+        <header> 
+            <h1>Bedrock Chatbot</h1>
+        </header>
+        <section class="container">
+            <form id="my-form">
+                <div class="msg">For login, use your own ID which should represent your identity.</div>
+                <div class="input">
+                    <label for="userId">User Id:</label>
+                    <input type="text" id="userId">
+                    <text>Conversation Type: </text>
+                    <select name="conversationType" id="convtype">
+                        <option type="text" value="normal" selected>1. General Conversation</option>
+                        <option value="qa-all">2-0. Question/Answering (RAG ALL)</option>
+                        <option value="qa-kendra">2-1. Question/Answering (RAG-kendra)</option>
+                        <option value="qa-opensearch">2-2. Question/Answering (RAG-opensearch)</option>
+                        <option value="dual-search">3. RAG - Dual Search (Korean/English)</option>                                                          
+                        <option value="code-generation-python">4. Code Generation - Python</option>         
+                        <option value="code-generation-nodejs">5. Code Generation - Node.js</option>                        
+                        <option value="translation">6. Translation</option>
+                        <option value="grammar">7. Grammatical Error Correction</option>                                  
+                        <option value="sentiment">8. Extracted Topic and Sentiment</option>          
+                        <option value="extraction">9. Information Extraction (email)</option>          
+                        <option value="pii">10. Removing PII</option>          
+                        <option value="step-by-step">11. Complex Question (step-by-step)</option>                                  
+                        <option value="like-child">12. Child Conversation (few shot)</option>                                  
+                        <option value="timestamp-extraction">13. Timestamp Extraction</option>                                  
+                        <option value="funny">14. Free Conversation</option>   
+                    <!--  <option value="get-weather">15. Weather (function calling)</option> -->
+                        <option value="none">99. No prompt</option>                                                
+                    </select>
+                </div>
+                <input class="btn" type="submit" value="Submit">                
+            </form>
+        </section>        
+        <script src="login.js"></script>
+    </body>
+</html>
+
