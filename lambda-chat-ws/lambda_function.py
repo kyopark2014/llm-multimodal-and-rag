@@ -247,18 +247,28 @@ def general_conversation(chat, conversation, text):
     
     human = "{input}"
     
+    #prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
     prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
     print('prompt: ', prompt)
     
     chain = prompt | chat
     
     chat_history = extract_chat_history_from_memory()
+    print('chat_history: ', chat_history)
+        
+    chain = prompt | chat
+    result = chain.invoke(
+        {
+            "history": chat_history,
+            "text": text,
+        }
+    )
                             
-    msg = prompt.format_prompt(
-        history=chat_history, input=text
-    ).to_messages()
+    #msg = prompt.format_prompt(
+    #    history=chat_history, input=text
+    #).to_messages()
     
-    #msg = result.content
+    msg = result.content
     print('msg: ', msg)
     
     #return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
