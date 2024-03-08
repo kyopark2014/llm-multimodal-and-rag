@@ -1233,6 +1233,7 @@ def getResponse(connectionId, jsonBody):
     msg = ""
     reference = ""
     isControlMsg = False
+    token_counter_input = 0
     
     if type == 'text' and body[:11] == 'list models':
         isControlMsg = True
