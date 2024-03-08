@@ -380,6 +380,47 @@ def get_summary(chat, docs):
     
     return summary
 
+def generate_code(chat, text, context, mode):
+    if mode == 'py':    
+        system = (
+            """다음의 <context> tag안에는 질문과 관련된 python code가 있습니다. 주어진 예제를 참조하여 질문과 관련된 python 코드를 생성합니다. Assistant의 이름은 서연입니다. 결과는 <result> tag를 붙여주세요.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    elif mode == 'js':
+        system = (
+            """다음의 <context> tag안에는 질문과 관련된 node.js code가 있습니다. 주어진 예제를 참조하여 질문과 관련된 node.js 코드를 생성합니다. Assistant의 이름은 서연입니다. 결과는 <result> tag를 붙여주세요.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    
+    human = "<context>{text}</context>"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+    
+    chain = prompt | chat    
+    try: 
+        result = chain.invoke(
+            {
+                "context": context,
+                "text": text
+            }
+        )
+        
+        summary = result.content
+        print('result of summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
+
 def summary_of_code(chat, code, mode):
     if mode == 'py':
         system = (
@@ -627,7 +668,7 @@ def load_csv_document(path, doc_prefix, s3_file_name):
 
     return docs
     
-def load_chat_history(userId, allowTime, conv_type, rag_type):
+def load_chat_history(userId, allowTime):
     dynamodb_client = boto3.client('dynamodb')
 
     response = dynamodb_client.query(
@@ -847,7 +888,7 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
     print('processing time for revised question: ', time_for_revise)
     
     # retrieve relevant documents from RAG
-    selected_relevant_docs = retrieve_docs_from_RAG(chat, text, connectionId, requestId, bedrock_embedding, rag_type)
+    selected_relevant_docs = retrieve_docs_from_RAG(text, connectionId, requestId, bedrock_embedding, rag_type)
     
     # get context
     relevant_context = ""
@@ -883,7 +924,7 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
 
     return msg, reference
     
-def retrieve_docs_from_RAG(chat, revised_question, connectionId, requestId, bedrock_embedding, rag_type):
+def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_embedding, rag_type):
     vectorstore_opensearch = OpenSearchVectorSearch(
         index_name = "idx-*", # all
         is_aoss = False,
@@ -1041,7 +1082,7 @@ def getResponse(connectionId, jsonBody):
         map_chain[userId] = memory_chain
         
         allowTime = getAllowTime()
-        load_chat_history(userId, allowTime, conv_type, rag_type)
+        load_chat_history(userId, allowTime)
         
     start = int(time.time())    
 
