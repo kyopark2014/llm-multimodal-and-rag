@@ -1,11 +1,17 @@
-# Claude3을 이용한 RAG Chatbot 만들기
+# Claude3로 RAG를 활용한 Chatbot 만들기
 
-
-여기에서는 Anthropic Claude3를 이용하여 RAG가 적용된 Chatbot을 만드는것을 설명합니다. LLM을 이용한 Application을 개발하기 위하여 LangChain을 이용합니다. 이를 통해 다양한 LLM을 편리하게 이용할 수 있습니다.
-
-
+LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 [LangChain](https://www.langchain.com/)을 이용하면 쉽고 빠르게 개발할 수 있습니다. 하지만, 근래에 다양한 LLM 모델이 출현하고, 관련된 기술이 빠르게 발전하고 있어서, LangChain도 빠르게 진화하고 있습니다. [Anthropic Claude3](https://aws.amazon.com/ko/blogs/machine-learning/unlocking-innovation-aws-and-anthropic-push-the-boundaries-of-generative-ai-together/)는 이전 모델 대비 훨씬 빠른 속도와 높은 정확도를 가지고 있지만, Langchain의 [Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 더이상 사용할 수 없고, [BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 사용하여야 합니다. 여기에서는 BedrockChat을 활용하여 Claude3으로 RAG를 활용하는 방법에 대해 설명합니다. 
 
 ## Architecture 개요
+
+여기서는 서버리스 Architecture를 이용하여 RAG가 적용된 Chatbot 인프라를 구성합니다. AWS CDK로 관련된 인프라를 배포하고 편리하게 관리할 수 있습니다. 
+
+- Multi-Region LLM: [분당 Request와 토큰 수](https://docs.aws.amazon.com/bedrock/latest/userguide/quotas.html)의 제한을 완화하기 위하여 여러 Region의 LLM을 활용합니다.
+- RAG 구성: OpenSearch의 Vector 검색을 이용하여 빠르고 성능이 우수한 RAG를 구성할 수 있습니다.
+- 인터넷 검색: RAG에 관련된 문서가 없을 경우에 Google으 Search API를 활용하여 검색된 결과를 활용합니다.
+- Prority Search: RAG의 Retrieve를 이용하여 k개의 문서를 얻었지만 일부는 관련도가 낮을수 있어 정확도에 나쁜 영향을 줄 수 있습니다. Faiss의 Similarity Search로 관련된 문서(Relevant Documents)를 관련도에 따라 정렬하고 관련이 없는 문서는 제외할 수 있습니다.
+- 채팅 이력의 저장 및 활용: 서버리스 서비스인 Lambda가 실행될 때에 DynamoDB에 저장된 채팅 이력을 가져와 활용합니다.
+- 지속적인 대화: API Gateway를 이용하여 WebSocket을 구성하므로써 양방향 대화를 구현할 수 있습니다.
 
 ![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/6523d767-4dfb-4268-82e3-f064c91b377e)
 
@@ -15,7 +21,7 @@
 
 ### Claude3 API
 
-Claude3부터는 Langchain의 [Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 더이상 사용할 수 없고, [BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 사용하여야 합니다. Parameter의 경우에 max_tokens_to_sample이 max_tokens로 변경되었습니다.
+Claude3부터는  Parameter의 경우에 max_tokens_to_sample이 max_tokens로 변경되었습니다.
 
 ```python
 import boto3
