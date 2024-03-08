@@ -1196,7 +1196,7 @@ def getResponse(connectionId, jsonBody):
     print ('selected_LLM: ', selected_LLM)
     
     # Multi-region LLM
-    if selected_LLM >= len(profile_of_LLMs)-1:
+    if selected_LLM >= len(profile_of_LLMs):
         selected_LLM = 0       
         print ('new selected_LLM: ', selected_LLM) 
         
