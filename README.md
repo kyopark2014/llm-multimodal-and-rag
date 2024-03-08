@@ -70,10 +70,21 @@ llm = BedrockChat(
 
 ### RAG 활용하기
 
+"Conversation Type"에서 [RAG - opensearch]을 선택한 후에, [Amazon_Kendra.docx](./contents/Amazon_Kendra.docx)을 다운로드하여 채팅창 아래의 파일 아이콘을 이용하여 업로드합니다. 이때 해당 문서에 대한 요약을 보여줍니다.
+
+
+채팅창에 "OpenSearch와 Elasticsearch와의 차이점은 무엇인가요?"을 입력하면, 아래와 같은 결과를 얻을 수 있습니다.
+
+
 
 ### 코드 요약하기
 
 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 다운로드 후에 채팅창 아래의 파일 아이콘을 선택하여 업로드합니다. lambda_function.py가 가지고 있는 함수들에 대한 요약을 보여줍니다.
+
+이때의 결과는 아래와 같습니다.
+
+![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/eee5b660-cfcd-46ba-a21d-b8ce312efe3c)
+
 
 ### 문장 오류 확인
 
