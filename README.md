@@ -22,7 +22,7 @@ LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 
 
 ### Claude3 API
 
-Claude3부터는  Parameter의 경우에 max_tokens_to_sample이 max_tokens로 변경되었습니다.
+Claude3부터는  Parameter의 경우에 max_tokens_to_sample이 max_tokens로 변경되었습니다. 세부 코드는 [lambda-chat-ws](./lambda-chat-ws/lambda_function.py)을 참조합니다. 
 
 ```python
 import boto3
