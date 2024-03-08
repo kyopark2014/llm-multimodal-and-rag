@@ -1292,7 +1292,7 @@ def getResponse(connectionId, jsonBody):
                 #img_base64 = Image.open(BytesIO(image_content))
                 
                 #img_base64 = base64.encode(Image.open(BytesIO(image_content)))
-                img_base64 = base64.encode(image_content)
+                img_base64 = base64.encode(image_content).decode("utf-8")
                 
                 
                 chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
