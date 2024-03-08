@@ -122,6 +122,40 @@ def get_chat(profile_of_LLMs, selected_LLM):
     
     return chat
 
+def get_chat_without_stream(profile_of_LLMs, selected_LLM):
+    profile = profile_of_LLMs[selected_LLM]
+    bedrock_region =  profile['bedrock_region']
+    modelId = profile['model_id']
+    print(f'LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    maxOutputTokens = int(profile['maxOutputTokens'])
+                          
+    # bedrock   
+    boto3_bedrock = boto3.client(
+        service_name='bedrock-runtime',
+        region_name=bedrock_region,
+        config=Config(
+            retries = {
+                'max_attempts': 30
+            }            
+        )
+    )
+    parameters = {
+        "max_tokens":maxOutputTokens,     
+        "temperature":0.1,
+        "top_k":250,
+        "top_p":0.9,
+        "stop_sequences": [HUMAN_PROMPT]
+    }
+    # print('parameters: ', parameters)
+
+    chat = BedrockChat(
+        model_id=modelId,
+        client=boto3_bedrock, 
+        model_kwargs=parameters,
+    )        
+    
+    return chat
+
 def get_embedding(profile_of_LLMs, selected_LLM):
     profile = profile_of_LLMs[selected_LLM]
     bedrock_region =  profile['bedrock_region']
@@ -578,7 +612,7 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
 
     return msg
 
-def analyze_image(chat, img_base64, query):
+def use_multimodal(chat, img_base64, query):    
     if query == "":
         query = "What is this?"
     
@@ -1250,12 +1284,16 @@ def getResponse(connectionId, jsonBody):
                 msg = summary_of_code(chat, contents, file_type)          
             
             elif file_type == 'png':
+                print('multimodal: ', object)
+                
                 s3_client = boto3.client('s3') 
                 image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
                 
                 image_content = image_obj['Body'].read()
                 img_base64 = Image.open(io.BytesIO(image_content))
-                msg = analyze_image(chat, img_base64, "")              
+                
+                chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
+                msg = use_multimodal(chat, img_base64, "")              
                                 
             else:
                 msg = "uploaded file: "+object
