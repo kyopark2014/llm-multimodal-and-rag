@@ -402,7 +402,7 @@ def summary_of_code(chat, code):
     #        "Here is pieces of codes, contained in <python> tags. Explain the functions and roles of each function in detail within 500 characters."
     #    )
     system = (
-        "다음의 <python> tag에는 python code가 있습니다. 각 함수의 기능과 역할을 자세하게 500자 이내로 설명하세요."
+        "다음의 <python> tag에는 python code가 있습니다. 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
     )
     
     human = "<python>{code}</python>"
