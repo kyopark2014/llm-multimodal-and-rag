@@ -205,91 +205,6 @@ def isKorean(text):
         print('Not Korean: ', word_kor)
         return False
 
-def check_grammer(chat, text):
-    global time_for_inference
-    
-    if debugMessageMode == 'true':  
-        start_time_for_inference = time.time()
-        
-    if isKorean(text)==True:
-        system = (
-            "다음의 문장에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요. 결과는 <result> tag를 붙여주세요."
-        )
-    else: 
-        system = (
-            "In the following sentence, find the error in the sentence and explain it, and add the corrected sentence at the end of your answer. Put it in <result> tags."
-        )
-        
-    human = "{text}"
-    
-    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    print('prompt: ', prompt)
-    
-    chain = prompt | chat    
-    try: 
-        result = chain.invoke(
-            {
-                "text": text
-            }
-        )
-        
-        msg = result.content
-        print('translated text: ', msg)
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                    
-        raise Exception ("Not able to request to LLM")
-
-    if debugMessageMode == 'true':          
-        end_time_for_inference = time.time()
-        time_for_inference = end_time_for_inference - start_time_for_inference
-    
-    return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
-    
-def translate_text(chat, text):
-    global time_for_inference
-    
-    if debugMessageMode == 'true':  
-        start_time_for_inference = time.time()
-        
-    system = (
-        "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
-    )
-    human = "<article>{text}</article>"
-    
-    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    print('prompt: ', prompt)
-    
-    if isKorean(text)==False :
-        input_language = "English"
-        output_language = "Korean"
-    else:
-        input_language = "Korean"
-        output_language = "English"
-                        
-    chain = prompt | chat    
-    try: 
-        result = chain.invoke(
-            {
-                "input_language": input_language,
-                "output_language": output_language,
-                "text": text,
-            }
-        )
-        
-        msg = result.content
-        print('translated text: ', msg)
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                    
-        raise Exception ("Not able to request to LLM")
-
-    if debugMessageMode == 'true':          
-        end_time_for_inference = time.time()
-        time_for_inference = end_time_for_inference - start_time_for_inference
-    
-    return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
-
 def general_conversation(connectionId, requestId, chat, query):
     global time_for_inference, history_length, token_counter_history    
     time_for_inference = history_length = token_counter_history = 0
@@ -351,6 +266,91 @@ def general_conversation(connectionId, requestId, chat, query):
             token_counter_history = chat.get_num_tokens(chat_history)
             print('token_size of history: ', token_counter_history)
         
+        end_time_for_inference = time.time()
+        time_for_inference = end_time_for_inference - start_time_for_inference
+    
+    return msg
+    
+def translate_text(chat, text):
+    global time_for_inference
+    
+    if debugMessageMode == 'true':  
+        start_time_for_inference = time.time()
+        
+    system = (
+        "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
+    )
+    human = "<article>{text}</article>"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+    
+    if isKorean(text)==False :
+        input_language = "English"
+        output_language = "Korean"
+    else:
+        input_language = "Korean"
+        output_language = "English"
+                        
+    chain = prompt | chat    
+    try: 
+        result = chain.invoke(
+            {
+                "input_language": input_language,
+                "output_language": output_language,
+                "text": text,
+            }
+        )
+        
+        msg = result.content
+        print('translated text: ', msg)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+
+    if debugMessageMode == 'true':          
+        end_time_for_inference = time.time()
+        time_for_inference = end_time_for_inference - start_time_for_inference
+    
+    return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
+
+def check_grammer(chat, text):
+    global time_for_inference
+    
+    if debugMessageMode == 'true':  
+        start_time_for_inference = time.time()
+        
+    if isKorean(text)==True:
+        system = (
+            "다음의 문장에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요."
+        )
+    else: 
+        system = (
+            "In the following sentence, find the error in the sentence and explain it, and add the corrected sentence at the end of your answer."
+        )
+        
+    human = "{text}"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+    
+    chain = prompt | chat    
+    try: 
+        result = chain.invoke(
+            {
+                "text": text
+            }
+        )
+        
+        msg = result.content
+        print('result of grammer correction: ', msg)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+
+    if debugMessageMode == 'true':          
         end_time_for_inference = time.time()
         time_for_inference = end_time_for_inference - start_time_for_inference
     
