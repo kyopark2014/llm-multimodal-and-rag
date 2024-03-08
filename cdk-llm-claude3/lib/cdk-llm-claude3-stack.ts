@@ -91,18 +91,6 @@ const claude2 = [
     "model_type": "claude",
     "model_id": "anthropic.claude-v2:1",
     "maxOutputTokens": "8196"
-  },
-  {
-    "bedrock_region": "us-northeast-1", // Tokyo
-    "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",
-    "maxOutputTokens": "8196"
-  },
-  {
-    "bedrock_region": "eu-central-1", // Europe (Frankfurt)
-    "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",
-    "maxOutputTokens": "8196"
   }
 ];
 
