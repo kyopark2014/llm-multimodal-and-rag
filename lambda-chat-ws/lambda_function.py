@@ -380,12 +380,12 @@ def get_summary(chat, docs):
     
     return summary
 
-def summary_of_code(chat, code, file_type):
-    if file_type == 'py':
+def summary_of_code(chat, code, mode):
+    if mode == 'py':
         system = (
             "다음의 <article> tag에는 python code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
         )
-    elif file_type == 'js':
+    elif mode == 'js':
         system = (
             "다음의 <article> tag에는 node.js code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
         )

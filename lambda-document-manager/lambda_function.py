@@ -401,11 +401,11 @@ def get_chat(profile_of_LLMs, selected_LLM):
     return chat
 
 def summary_of_code(chat, code, mode):
-    if mode == 'python': 
+    if mode == 'py': 
         system = (
             "다음의 <article> tag에는 python code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
         )
-    elif mode == 'nodejs':
+    elif mode == 'js':
         system = (
             "다음의 <article> tag에는 node.js code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
         )
@@ -462,15 +462,8 @@ def summarize_process_for_relevent_code(conn, chat, code, key, region_name):
             file_type = key[key.rfind('.')+1:len(key)].lower()
             print('file_type: ', file_type)
                             
-            if file_type == 'py':
-                mode = 'python'
-            elif file_type == 'js':
-                mode = 'nodejs'
-            else:
-                mode = file_type
-                
-            summary = summary_of_code(chat, code, mode)
-            print(f"summary ({region_name}, {mode}): {summary}")
+            summary = summary_of_code(chat, code, file_type)
+            print(f"summary ({region_name}, {file_type}): {summary}")
             
             # print('first line summary: ', summary[:len(function_name)])
             # print('function name: ', function_name)            
