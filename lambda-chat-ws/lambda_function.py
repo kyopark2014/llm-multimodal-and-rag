@@ -1288,16 +1288,18 @@ def getResponse(connectionId, jsonBody):
                 s3_client = boto3.client('s3') 
                     
                 image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
+                print('image_obj: ', image_obj)
                 
-                #image_content = image_obj['Body'].read()
+                image_content = image_obj['Body'].read().decode("utf-8")
+                print('image_content: ', image_content)
                 #img_base64 = Image.open(BytesIO(image_content))
                 
                 #img_base64 = base64.encode(Image.open(BytesIO(image_content)))
-                #img_base64 = base64.encode(image_content).decode("utf-8")
+                img_base64 = base64.encode(image_content)
                 
                 
                 chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
-                msg = use_multimodal(chat, image_obj, "")              
+                msg = use_multimodal(chat, img_base64, "")              
                                 
             else:
                 msg = "uploaded file: "+object
