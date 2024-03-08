@@ -6,6 +6,7 @@ LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 
 
 서버리스 Architecture를 이용하여 RAG가 적용된 Chatbot 인프라를 구성하면, 트래픽의 변화에 유연하게 대응할 수 있으며, 유지보수에 대한 부담도 줄일 수 있습니다. 주요 구현 사항은 아래와 같습니다.
 
+- Multi modal: Text뿐 아니라 이미지를 LLM으로 처리합니다.
 - Multi-Region LLM: [분당 Request와 토큰 수](https://docs.aws.amazon.com/bedrock/latest/userguide/quotas.html)의 제한을 완화하기 위하여 여러 Region의 LLM을 활용합니다.
 - RAG 구성: OpenSearch의 Vector 검색을 이용하여 빠르고 성능이 우수한 RAG를 구성할 수 있습니다.
 - 인터넷 검색: RAG에 관련된 문서가 없을 경우에 Google으 Search API를 활용하여 검색된 결과를 활용합니다.
@@ -59,6 +60,10 @@ llm = BedrockChat(
 다수의 RAG 문서를 S3에 업로드할때 원할한 처리를 위한 Event driven architecture입니다. RAG용 문서는 채팅 UI에서 파일업로드 버튼을 통해 업로드 할 수 있지만, S3 console 또는 AWS CLI를 이용해 S3에 직접 업로드 할 수 있습니다. 이때, OpenSearch에 문서를 업로드하는 시간보다 더 빠르게 문서가 올라오는 경우에 Queue를 통해 S3 putEvent를 관리하여야 합니다. OpenSearch에 문서 업로드시에 Embedding이 필요하므로 아래와 같이 Multi-Region의 Bedrcok Embedding을 활용합니다. 
 
 ![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/7403e19b-20ca-437b-b2db-725d3c57b4f3)
+
+
+### Multi Modal 
+
 
 
 ### RAG를 활용하기
