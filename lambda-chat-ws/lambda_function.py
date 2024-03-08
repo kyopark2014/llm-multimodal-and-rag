@@ -1085,14 +1085,14 @@ def getResponse(connectionId, jsonBody):
             else:       
                 if conv_type == 'normal':      # normal
                     msg = general_conversation(connectionId, requestId, chat, text)                          
-                    
-                elif conv_type == 'translation':                    
-                    msg = translate_text(chat, text)
-                
+                                    
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
                     msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type)
                     
+                elif conv_type == 'translation':                    
+                    msg = translate_text(chat, text)
+                
                 elif conv_type == 'grammar':                    
                     msg = check_grammer(chat, text)
                     
