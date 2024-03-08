@@ -19,7 +19,7 @@ from langchain_community.docstore.document import Document
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.opensearch_vector_search import OpenSearchVectorSearch
 from langchain_community.embeddings import BedrockEmbeddings
-from multiprocessing import Pipe
+from multiprocessing import Process, Pipe
 from googleapiclient.discovery import build
 
 from langchain_community.chat_models import BedrockChat
@@ -380,20 +380,21 @@ def get_summary(chat, docs):
     
     return summary
 
-def summary_of_code(chat, code):
-    #if isKorean(code)==True:
-    #    system = (
-    #        "다음의 <python> tag에는 python code가 있습니다. 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
-    #    )
-    #else: 
-    #    system = (
-    #        "Here is pieces of codes, contained in <python> tags. Explain the functions and roles of each function in detail within 500 characters."
-    #    )
-    system = (
-        "다음의 <python> tag에는 python code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
-    )
+def summary_of_code(chat, code, file_type):
+    if file_type == 'py':
+        system = (
+            "다음의 <article> tag에는 python code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
+        )
+    elif file_type == 'js':
+        system = (
+            "다음의 <article> tag에는 node.js code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
+        )
+    else:
+        system = (
+            "다음의 <article> tag에는 code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
+        )
     
-    human = "<python>{code}</python>"
+    human = "<article>{code}</article>"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
     print('prompt: ', prompt)
@@ -1162,13 +1163,13 @@ def getResponse(connectionId, jsonBody):
 
                 msg = get_summary(chat, contexts)
                 
-            elif file_type == 'py':
+            elif file_type == 'py' or file_type == 'js':
                 s3r = boto3.resource("s3")
                 doc = s3r.Object(s3_bucket, s3_prefix+'/'+object)
                 
                 contents = doc.get()['Body'].read().decode('utf-8')
                                 
-                msg = summary_of_code(chat, contents)                        
+                msg = summary_of_code(chat, contents, file_type)                        
                                 
             else:
                 msg = "uploaded file: "+object

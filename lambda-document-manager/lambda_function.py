@@ -414,7 +414,7 @@ def summary_of_code(chat, code, mode):
             "다음의 <article> tag에는 code가 있습니다. code의 전반적인 목적에 대해 설명하고, 각 함수의 기능과 역할을 자세하게 한국어 500자 이내로 설명하세요."
         )
     
-    human = "<python>{code}</python>"
+    human = "<article>{code}</article>"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
     print('prompt: ', prompt)
