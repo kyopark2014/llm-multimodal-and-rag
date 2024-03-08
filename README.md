@@ -60,6 +60,119 @@ llm = BedrockChat(
 
 ![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/7403e19b-20ca-437b-b2db-725d3c57b4f3)
 
+
+### RAG를 활용하기
+
+OpenSearch로 얻어진 관련된 문서들로 부터 Context를 얻습니다. 새로운 질문(Revised question)이 한국어/영어이면 다른 Prompt를 활용하빈다. 여기서는 <context></context> tag를 활용하여 context를 다른 문장과 구분하여 더 명확하게 LLM에게 전달할 수 있습니다. 이때, readStreamMsg()을 이용하여 얻어진 stream을 client로 전달합니다. 
+
+```python
+def query_using_RAG_context(connectionId, requestId, chat, context, revised_question):    
+    if isKorean(revised_question)==True:
+        system = (
+            """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    else: 
+        system = (
+            """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    
+    human = "{input}"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+                   
+    chain = prompt | chat
+    
+    stream = chain.invoke(
+        {
+            "context": context,
+            "input": revised_question,
+        }
+    )
+    msg = readStreamMsg(connectionId, requestId, stream.content)    
+
+    return msg
+
+def readStreamMsg(connectionId, requestId, stream):
+    msg = ""
+    if stream:
+        for event in stream:
+            msg = msg + event
+
+            result = {
+                'request_id': requestId,
+                'msg': msg,
+                'status': 'proceeding'
+            }
+            sendMessage(connectionId, result)
+    return msg
+```
+
+
+### Google Search API 활용
+
+Google Search API를 활용하기 위해서는 [google_api_key](https://developers.google.com/custom-search/docs/paid_element?hl=ko#api_key)와 [google_cse_id](https://programmablesearchengine.google.com/controlpanel/create?hl=ko)가 필요합니다. 이 값을 코드에 하드코딩하지 않기 위하여 AWS Secret Manager를 이용합니다. 아래와 같이 google_api_key와 google_cse_id을 가져옵니다. 
+
+```python
+googleApiSecret = os.environ.get('googleApiSecret')
+secretsmanager = boto3.client('secretsmanager')
+try:
+    get_secret_value_response = secretsmanager.get_secret_value(
+        SecretId=googleApiSecret
+    )
+    secret = json.loads(get_secret_value_response['SecretString'])
+    google_api_key = secret['google_api_key']
+    google_cse_id = secret['google_cse_id']
+
+except Exception as e:
+    raise e
+```
+
+OpenSearch에 검색했을때 관련된 문서가 없거나 관련도가 낮은 경우에 아래와 같이 Google Search API로 관련된 문서를 가져와서 RAG처럼 활용합니다.
+
+```python
+if len(selected_relevant_docs)==0:  # google api
+    api_key = google_api_key
+    cse_id = google_cse_id 
+                
+    relevant_docs = []
+    service = build("customsearch", "v1", developerKey=api_key)
+    result = service.cse().list(q=revised_question, cx=cse_id).execute()
+
+    if "items" in result:
+        for item in result['items']:
+            api_type = "google api"
+            excerpt = item['snippet']
+            uri = item['link']
+            title = item['title']
+            confidence = ""
+            assessed_score = ""
+                            
+            doc_info = {
+                "rag_type": 'search',
+                "api_type": api_type,
+                "confidence": confidence,
+                "metadata": {
+                    "source": uri,
+                    "title": title,
+                    "excerpt": excerpt,
+                },
+                "assessed_score": assessed_score,
+            }
+            relevant_docs.append(doc_info)           
+                
+    if len(relevant_docs)>=1:
+        selected_relevant_docs = priority_search(revised_question, relevant_docs, bedrock_embedding, minDocSimilarity)
+```
+
 ## 직접 실습 해보기
 
 ### 사전 준비 사항
