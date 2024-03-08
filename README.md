@@ -1,7 +1,8 @@
-# Claud3을 이용한 Chatbot 만들기
+# Claude3을 이용한 Chatbot 만들기
 
 
-여기에서는 Clade3를 이용한 Chatbot을 만드립니다. Cluade2.1, Claude Instant 모델과 비교도 할 수 있습니다.
+여기에서는 Anthropic Claude3를 이용하여 RAG가 적용된 Chatbot을 만드는것을 설명합니다. LLM을 이용한 Application을 개발하기 위하여 LangChain을 이용합니다. 이를 통해 다양한 LLM을 편리하게 이용할 수 있습니다.
+
 
 
 ## Architecture 개요
