@@ -211,11 +211,15 @@ def check_grammer(chat, text):
     if debugMessageMode == 'true':  
         start_time_for_inference = time.time()
         
-    system = (
-        "You are a helpful assistant that translates {input_language} to {output_language}. Put it in <result> tags."
-    )
-    # prompt_template = """\n\nHuman: 다음의 <article>에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요.
-    # prompt_template = """\n\nHuman: Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor named Seoyeon.
+    if isKorean(text)==True :
+        system = (
+            "다음의 문장에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요."
+        )
+    else: 
+        system = (
+            "Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor named Seoyeon."
+        )
+        
     human = "{text}"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
@@ -259,9 +263,9 @@ def translate_text(chat, text):
         start_time_for_inference = time.time()
         
     system = (
-        "You are a helpful assistant that translates {input_language} to {output_language}. Put it in <result> tags."
+        "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
     )
-    human = "{text}"
+    human = "<article>{text}</article>"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
     print('prompt: ', prompt)
