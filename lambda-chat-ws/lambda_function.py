@@ -204,6 +204,53 @@ def isKorean(text):
     else:
         print('Not Korean: ', word_kor)
         return False
+
+def check_grammer(chat, text):
+    global time_for_inference
+    
+    if debugMessageMode == 'true':  
+        start_time_for_inference = time.time()
+        
+    system = (
+        "You are a helpful assistant that translates {input_language} to {output_language}. Put it in <result> tags."
+    )
+    # prompt_template = """\n\nHuman: 다음의 <article>에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요.
+    # prompt_template = """\n\nHuman: Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor named Seoyeon.
+    human = "{text}"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+    
+    if isKorean(text)==False :
+        input_language = "English"
+        output_language = "Korean"
+    else:
+        input_language = "Korean"
+        output_language = "English"
+                        
+    chain = prompt | chat
+    
+    try: 
+        result = chain.invoke(
+            {
+                "input_language": input_language,
+                "output_language": output_language,
+                "text": text,
+            }
+        )
+        
+        msg = result.content
+        print('translated text: ', msg)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+
+    if debugMessageMode == 'true':          
+        end_time_for_inference = time.time()
+        time_for_inference = end_time_for_inference - start_time_for_inference
+    
+    return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
     
 def translate_text(chat, text):
     global time_for_inference
@@ -436,119 +483,6 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
 
     return msg
 
-def get_prompt_template(query, conv_type, rag_type):    
-    if isKorean(query):
-        if conv_type == "normal": # for General Conversation
-            prompt_template = """\n\nHuman: 다음의 <history>는 Human과 Assistant의 친근한 이전 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
-
-            <history>
-            {history}
-            </history>            
-
-            <question>            
-            {input}
-            </question>
-            
-            Assistant:"""
-
-        elif conv_type=='qa':  
-            prompt_template = """\n\nHuman: 다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
-            
-            <context>
-            {context}
-            </context>
-
-            <question>            
-            {question}
-            </question>
-
-            Assistant:"""
-                
-        elif conv_type == "translation":  # for translation, input
-            prompt_template = """\n\nHuman: 다음의 <article>를 English로 번역하세요. 머리말은 건너뛰고 본론으로 바로 들어가주세요. 또한 결과는 <result> tag를 붙여주세요.
-
-            <article>
-            {input}
-            </article>
-                        
-            Assistant:"""
-
-        elif conv_type == "grammar":  # Checking Grammatical Errors
-            prompt_template = """\n\nHuman: 다음의 <article>에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요.
-
-            <article>
-            {input}
-            </article>
-            
-            Assistant: """
-
-        else:
-            prompt_template = """\n\nHuman: 다음은 Human과 Assistant의 친근한 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant는 모르는 질문을 받으면 솔직히 모른다고 말합니다. 여기서 Assistant의 이름은 서연입니다. 
-        
-            <question>            
-            {question}
-            </question>
-
-            Assistant:"""
-
-    else:  # English
-        if conv_type == "normal": # for General Conversation
-            prompt_template = """\n\nHuman: Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor.
-
-            <history>
-            {history}
-            </history>
-            
-            <question>            
-            {input}
-            </question>
-
-            Assistant:"""
-
-        elif conv_type=='qa':  # for RAG
-            prompt_template = """\n\nHuman: Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer. 
-            
-            <context>
-            {context}
-            </context>
-
-            Go directly into the main points without the preamble. Do not include any additional information like newline characters "\n" or character counts in the result.
-                        
-            <question>
-            {question}
-            </question>
-
-            Assistant:"""
-
-        elif conv_type=="translation": 
-            prompt_template = """\n\nHuman: Here is an article, contained in <article> tags. Translate the article to Korean. Put it in <result> tags.
-            
-            <article>
-            {input}
-            </article>
-                        
-            Assistant:"""
-
-        elif conv_type == "grammar":  # Checking Grammatical Errors
-            prompt_template = """\n\nHuman: Here is an article, contained in <article> tags:
-
-            <article>
-            {input}
-            </article>
-
-            Please identify any grammatical errors in the article. Also, add the fixed article at the end of answer.
-            
-            Assistant: """
-
-        else: # normal
-            prompt_template = """\n\nHuman: Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor named Seoyeon.
-
-            Human: {input}
-
-            Assistant:"""
-    
-    return PromptTemplate.from_template(prompt_template)
-
 # load documents from s3 
 def load_document(file_type, s3_file_name):
     s3r = boto3.resource("s3")
@@ -707,12 +641,7 @@ def load_chat_history(userId, allowTime, conv_type, rag_type):
                 memory_chain.chat_memory.add_ai_message(msg[:MSG_LENGTH])                          
             else:
                 memory_chain.chat_memory.add_ai_message(msg) 
-                
-            if len(msg) > MSG_LENGTH:
-                memory_chat.save_context({"input": text}, {"output": msg[:MSG_LENGTH]})
-            else:
-                memory_chat.save_context({"input": text}, {"output": msg})
-                
+                                
 def getAllowTime():
     d = datetime.datetime.now() - datetime.timedelta(days = 2)
     timeStr = str(d)[0:19]
@@ -745,82 +674,6 @@ def readStreamMsg(connectionId, requestId, stream):
             sendMessage(connectionId, result)
     # print('msg: ', msg)
     return msg
-
-_ROLE_MAP = {"human": "\n\nHuman: ", "ai": "\n\nAssistant: "}
-def extract_chat_history_from_memory():
-    chat_history = []
-    chats = memory_chain.load_memory_variables({})    
-    # print('chats: ', chats)
-
-    for dialogue_turn in chats['chat_history']:
-        role_prefix = _ROLE_MAP.get(dialogue_turn.type, f"{dialogue_turn.type}: ")
-        history = f"{role_prefix[2:]}{dialogue_turn.content}"
-        if len(history)>MSG_LENGTH:
-            chat_history.append(history[:MSG_LENGTH])
-        else:
-            chat_history.append(history)
-
-    return chat_history
-
-def get_revised_question(llm, connectionId, requestId, query):    
-    # check korean
-    pattern_hangul = re.compile('[\u3131-\u3163\uac00-\ud7a3]+')
-    word_kor = pattern_hangul.search(str(query))
-    print('word_kor: ', word_kor)
-
-    if word_kor and word_kor != 'None':
-        condense_template = """
-        <history>
-        {chat_history}
-        </history>
-
-        Human: <history>를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 새로운 질문은 원래 질문의 중요한 단어를 반드시 포함합니다.
-
-        <question>            
-        {question}
-        </question>
-            
-        Assistant: 새로운 질문:"""
-    else: 
-        condense_template = """
-        <history>
-        {chat_history}
-        </history>
-        Answer only with the new question.
-
-        Human: using <history>, rephrase the follow up <question> to be a standalone question. The standalone question must have main words of the original question.
-         
-        <quesion>
-        {question}
-        </question>
-
-        Assistant: Standalone question:"""
-
-    print('condense_template: ', condense_template)
-
-    print('start prompt!')
-
-    condense_prompt_claude = PromptTemplate.from_template(condense_template)
-        
-    condense_prompt_chain = LLMChain(llm=llm, prompt=condense_prompt_claude)
-
-    chat_history = extract_chat_history_from_memory()
-    try:         
-        revised_question = condense_prompt_chain.run({"chat_history": chat_history, "question": query})
-        print('revised_question: '+revised_question)
-        
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                
-
-        sendErrorMessage(connectionId, requestId, err_msg)        
-        raise Exception ("Not able to request to LLM")
-    
-    if debugMessageMode=='true':
-        # sendDebugMessage(connectionId, requestId, '[Debug]: '+revised_question)
-        debug_msg_for_revised_question(llm, revised_question.replace("\n"," "), chat_history, connectionId, requestId)
-    
-    return revised_question.replace("\n"," ")
 
 def priority_search(query, relevant_docs, bedrock_embedding, minSimilarity):
     excerpts = []
@@ -969,22 +822,6 @@ def retrieve_docs_from_vectorstore(vectorstore_opensearch, query, top_k):
         
     return relevant_docs
 
-def debug_msg_for_revised_question(llm, revised_question, chat_history, connectionId, requestId):
-    global history_length, token_counter_history # debugMessageMode 
-
-    history_context = ""
-    token_counter_history = 0
-    for history in chat_history:
-        history_context = history_context + history
-
-    if history_context:
-        token_counter_history = llm.get_num_tokens(history_context)
-        print('token_size of history: ', token_counter_history)
-
-    history_length = len(history_context)
-
-    sendDebugMessage(connectionId, requestId, f"새로운 질문: {revised_question}\n * 대화이력({str(history_length)}자, {token_counter_history} Tokens)을 활용하였습니다.")
-
 def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type):
     global time_for_revise, time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs 
     time_for_revise = time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = 0
@@ -1028,14 +865,6 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
     
     global relevant_length, token_counter_relevant_docs    
     if debugMessageMode=='true':   # extract chat history for debug
-        chat_history_all = extract_chat_history_from_memory()
-        # print('chat_history_all: ', chat_history_all)
-
-        historys = []
-        for history in chat_history_all:
-            historys.append(len(history))
-        print('chat_history: ', historys)
-
         relevant_length = len(relevant_context)
         token_counter_relevant_docs = chat.get_num_tokens(relevant_context)
 
@@ -1132,24 +961,6 @@ def retrieve_docs_from_RAG(chat, revised_question, connectionId, requestId, bedr
     
     return selected_relevant_docs
     
-def get_answer_from_PROMPT(llm, text, conv_type, connectionId, requestId):
-    PROMPT = get_prompt_template(text, conv_type, "")
-    #print('PROMPT: ', PROMPT)
-
-    try: 
-        isTyping(connectionId, requestId)
-        stream = llm(PROMPT.format(input=text))
-        msg = readStreamMsg(connectionId, requestId, stream)
-        # msg = msg.replace(" ","&nbsp;")  
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)        
-        
-        sendErrorMessage(connectionId, requestId, err_msg)    
-        raise Exception ("Not able to request to LLM")
-    
-    return msg
-
 def get_profile(function_type):
     claude3_sonnet = json.loads(os.environ.get('claude3_sonnet'))
     claude2 = json.loads(os.environ.get('claude2'))
@@ -1189,7 +1000,7 @@ def getResponse(connectionId, jsonBody):
             print('rag_type: ', rag_type)
 
     global enableReference
-    global map_chain, map_chat, memory_chat, memory_chain, debugMessageMode, selected_LLM
+    global map_chain, map_chat, memory_chain, debugMessageMode, selected_LLM
         
     profile_of_LLMs = get_profile(function_type)
     print('length of profile: ', len(profile_of_LLMs))
@@ -1213,21 +1024,15 @@ def getResponse(connectionId, jsonBody):
     if userId in map_chat or userId in map_chain:  
         print('memory exist. reuse it!')        
         memory_chain = map_chain[userId]
-        memory_chat = map_chat[userId]
-        conversation = ConversationChain(llm=chat, verbose=False, memory=memory_chat)
         
     else: 
         print('memory does not exist. create new one!')
         memory_chain = ConversationBufferWindowMemory(memory_key="chat_history", output_key='answer', return_messages=True, k=10)
         map_chain[userId] = memory_chain
         
-        memory_chat = ConversationBufferWindowMemory(human_prefix='Human', ai_prefix='Assistant', k=MSG_HISTORY_LENGTH)
-        map_chat[userId] = memory_chat
-
         allowTime = getAllowTime()
         load_chat_history(userId, allowTime, conv_type, rag_type)
-        conversation = ConversationChain(llm=chat, verbose=False, memory=memory_chat)
- 
+        
     start = int(time.time())    
 
     msg = ""
@@ -1284,9 +1089,6 @@ def getResponse(connectionId, jsonBody):
                 isControlMsg = True
                 memory_chain.clear()
                 map_chain[userId] = memory_chain
-                memory_chat.clear()                
-                map_chat[userId] = memory_chat
-                conversation = ConversationChain(llm=chat, verbose=False, memory=memory_chat)
                     
                 print('initiate the chat memory!')
                 msg  = "The chat memory was intialized in this session."
@@ -1301,18 +1103,9 @@ def getResponse(connectionId, jsonBody):
                     print(f'rag_type: {rag_type}')
                     msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type)
                     
-                elif conv_type == 'none':   # no prompt
-                    try: 
-                        msg = chat(HUMAN_PROMPT+text+AI_PROMPT)
-                    except Exception:
-                        err_msg = traceback.format_exc()
-                        print('error message: ', err_msg)
-
-                        sendErrorMessage(connectionId, requestId, err_msg)    
-                        raise Exception ("Not able to request to LLM")
-                else: 
-                    msg = get_answer_from_PROMPT(chat, text, conv_type, connectionId, requestId)
-
+                elif conv_type == 'grammar':                    
+                    msg = check_grammer(chat, text)
+                    
                 # token counter
                 if debugMessageMode=='true':
                     token_counter_input = chat.get_num_tokens(text)
