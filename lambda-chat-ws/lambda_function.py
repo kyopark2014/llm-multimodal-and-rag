@@ -133,7 +133,7 @@ def get_embedding(profile_of_LLMs, selected_LLM):
     profile = profile_of_LLMs[selected_LLM]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    print(f'LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    print(f'Embedding: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
     
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -323,14 +323,14 @@ def check_grammer(chat, text):
         
     if isKorean(text)==True:
         system = (
-            "다음의 문장에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요."
+            "다음의 <article> tag안의 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요."
         )
     else: 
         system = (
-            "In the following sentence, find the error in the sentence and explain it, and add the corrected sentence at the end of your answer."
+            "Here is pieces of article, contained in <article> tags. Find the error in the sentence and explain it, and add the corrected sentence at the end of your answer."
         )
         
-    human = "{text}"
+    human = "<article>{text}</article>"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
     print('prompt: ', prompt)
