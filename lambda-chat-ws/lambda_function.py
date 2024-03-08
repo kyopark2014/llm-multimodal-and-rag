@@ -356,6 +356,74 @@ def check_grammer(chat, text):
     
     return msg
 
+def get_summary(chat, docs):    
+    text = ""
+    for doc in docs:
+        text = text + doc
+    
+    if isKorean(text)==True:
+        system = (
+            "다음의 <article> tag안의 문장을 요약해서 500자 이내로 설명하세오."
+        )
+    else: 
+        system = (
+            "Here is pieces of article, contained in <article> tags. Write a concise summary within 500 characters."
+        )
+    
+    human = "<article>{text}</article>"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+    
+    chain = prompt | chat    
+    try: 
+        result = chain.invoke(
+            {
+                "text": text
+            }
+        )
+        
+        summary = result.content
+        print('result of summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
+
+def summary_of_code(chat, code):
+    if isKorean(code)==True:
+        system = (
+            "다음의 <python> tag에는 python code가 있습니다. 각 함수의 기능과 역할을 자세하게 500자 이내로 설명하세요."
+        )
+    else: 
+        system = (
+            "Here is pieces of codes, contained in <python> tags. Explain the functions and roles of each function in detail within 500 characters."
+        )
+    
+    human = "<python>{code}</python>"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+    
+    chain = prompt | chat    
+    try: 
+        result = chain.invoke(
+            {
+                "code": code
+            }
+        )
+        
+        summary = result.content
+        print('result of code summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
+
 def revise_question(connectionId, requestId, chat, query):    
     global history_length, token_counter_history    
     history_length = token_counter_history = 0
@@ -567,45 +635,6 @@ def load_csv_document(path, doc_prefix, s3_file_name):
     print('docs[0]: ', docs[0])
 
     return docs
-
-def get_summary(llm, texts):    
-    # check korean
-    pattern_hangul = re.compile('[\u3131-\u3163\uac00-\ud7a3]+') 
-    word_kor = pattern_hangul.search(str(texts))
-    print('word_kor: ', word_kor)
-    
-    if word_kor:
-        prompt_template = """\n\nHuman: 다음 텍스트를 요약해서 500자 이내로 설명하세오.
-        
-        <text>
-        {text}
-        </text
-        
-        Assistant:"""        
-    else:         
-        prompt_template = """\n\nHuman: Write a concise summary of the following:
-
-        {text}
-        
-        Assistant:"""
-    
-    PROMPT = PromptTemplate(template=prompt_template, input_variables=["text"])
-    chain = load_summarize_chain(llm, chain_type="stuff", prompt=PROMPT)
-
-    docs = [
-        Document(
-            page_content=t
-        ) for t in texts[:5]
-    ]
-    summary = chain.run(docs)
-    print('summary: ', summary)
-
-    if summary == '':  # error notification
-        summary = 'Fail to summarize the document. Try agan...'
-        return summary
-    else:
-        # return summary[1:len(summary)-1]   
-        return summary
     
 def load_chat_history(userId, allowTime, conv_type, rag_type):
     dynamodb_client = boto3.client('dynamodb')
@@ -1142,6 +1171,15 @@ def getResponse(connectionId, jsonBody):
                 print('contexts: ', contexts)
 
                 msg = get_summary(chat, contexts)
+                
+            elif file_type == 'py':
+                s3r = boto3.resource("s3")
+                doc = s3r.Object(s3_bucket, s3_prefix+'/'+object)
+                
+                contents = doc.get()['Body'].read().decode('utf-8')
+                                
+                msg = summary_of_code(chat, contents)                        
+                                
             else:
                 msg = "uploaded file: "+object
                                                         
