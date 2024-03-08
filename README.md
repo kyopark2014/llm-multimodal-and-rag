@@ -1,4 +1,4 @@
-# LangChaind을 이용하여 Claude3 LLM으로 RAG를 활용한 Chatbot 만들기
+# LangChain을 이용하여 Claude3 LLM으로 RAG를 활용한 Chatbot 만들기
 
 LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 [LangChain](https://www.langchain.com/)을 이용하면 쉽고 빠르게 개발할 수 있습니다. 하지만, 근래에 다양한 LLM 모델이 출현하고, 관련된 기술이 빠르게 발전하고 있어서, LangChain도 빠르게 진화하고 있습니다. [Anthropic Claude3](https://aws.amazon.com/ko/blogs/machine-learning/unlocking-innovation-aws-and-anthropic-push-the-boundaries-of-generative-ai-together/)는 이전 모델 대비 훨씬 빠른 속도와 높은 정확도를 가지고 있지만, Langchain의 [Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 더이상 사용할 수 없고, [BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 사용하여야 합니다. 여기에서는 BedrockChat을 활용하여 Claude3으로 RAG를 활용하는 방법에 대해 설명합니다. 
 
@@ -54,7 +54,6 @@ llm = BedrockChat(
     model_kwargs = parameters,
 )
 ```
-
 
 다수의 RAG 문서를 S3에 업로드할때 원할한 처리를 위한 Event driven architecture입니다. RAG용 문서는 채팅 UI에서 파일업로드 버튼을 통해 업로드 할 수 있지만, S3 console 또는 AWS CLI를 이용해 S3에 직접 업로드 할 수 있습니다. 이때, OpenSearch에 문서를 업로드하는 시간보다 더 빠르게 문서가 올라오는 경우에 Queue를 통해 S3 putEvent를 관리하여야 합니다. OpenSearch에 문서 업로드시에 Embedding이 필요하므로 아래와 같이 Multi-Region의 Bedrcok Embedding을 활용합니다. 
 
@@ -116,6 +115,39 @@ def readStreamMsg(connectionId, requestId, stream):
     return msg
 ```
 
+### 번역하기
+
+입력된 text가 한국어인지 확인하여 chain.invoke()의 input/output 언어 타입을 변경할 수 있습니다. 번역된 결과만을 얻기 위하여 <result></result> tag를 활용하였고, 결과에서 해당 tag를 제거하여 번역된 문장만을 추출하였습니다.
+
+```python
+def translate_text(chat, text):
+    system = (
+        "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
+    )
+    human = "<article>{text}</article>"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+    
+    if isKorean(text)==False :
+        input_language = "English"
+        output_language = "Korean"
+    else:
+        input_language = "Korean"
+        output_language = "English"
+                        
+    chain = prompt | chat    
+    result = chain.invoke(
+        {
+            "input_language": input_language,
+            "output_language": output_language,
+            "text": text,
+        }
+    )
+        
+    msg = result.content
+    return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
+```
 
 ### Google Search API 활용
 
