@@ -67,13 +67,7 @@ llm = BedrockChat(
 
 ## 실행결과
 
-[lambda_function.py](https://raw.githubusercontent.com/kyopark2014/rag-code-generation/main/lambda-chat-ws/lambda_function.py)을 다운로드 후에 채팅창 아래의 파일 아이콘을 선택하여 업로드합니다. lambda_function.py가 가지고 있는 함수들에 대한 요약을 보여줍니다.
-
-![image](https://github.com/kyopark2014/rag-code-generation/assets/52392004/44b752de-f1fb-43e9-a6f6-e7ade65dbcb8)
-
-채팅창에 아래와 같이 "OpenSearch에서 Knowledge Store 생성하기"라고 입력하고 결과를 확인합니다. 아래와 같이 질문과 관련된 코드를 생성할 수 있으며, 생성된 코드에 대한 설명과 함께 레퍼런스에 대한 정보를 함께 제공하여 사용자가 생성된 코드를 이해하는데 도움을 줍니다. 
-
-![result](https://github.com/kyopark2014/rag-code-generation/assets/52392004/1863643d-d263-408c-ae54-dfea3aa9eff5)
+[lambda_function.py](./rllm-chatbot-using-claude3/lambda-chat-ws/lambda_function.py)을 다운로드 후에 채팅창 아래의 파일 아이콘을 선택하여 업로드합니다. lambda_function.py가 가지고 있는 함수들에 대한 요약을 보여줍니다.
 
 
 
