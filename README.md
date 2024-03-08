@@ -68,8 +68,22 @@ llm = BedrockChat(
 
 ## 실행결과
 
+### RAG 활용하기
+
+
+### 코드 요약하기
+
 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 다운로드 후에 채팅창 아래의 파일 아이콘을 선택하여 업로드합니다. lambda_function.py가 가지고 있는 함수들에 대한 요약을 보여줍니다.
 
+### 문장 오류 확인
+
+"Conversation Type"으로 [Grammer Error Correction]을 선택하고, "다음의 문문장에서 문장의 오류를 찾아서 설명하고, 오류가 수정된 문장을 답변 마지막에 추가하여 주세요."로 입력했을때의 결과는 아래와 같습니다.
+
+![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/63294a0f-f806-43be-bfed-ad9b140a0dde)
+
+"In the following sentence, find the error in the sentence and aa explain it, and add the corrected sentence at the end of your answer."로 입력했을 때의 결과는 아래와 같습니다.
+
+![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/dfa3a8a0-2557-4a2f-9fca-6e531557725d)
 
 
 ## 리소스 정리하기 
