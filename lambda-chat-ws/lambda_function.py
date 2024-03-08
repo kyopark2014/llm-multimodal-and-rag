@@ -1290,12 +1290,15 @@ def getResponse(connectionId, jsonBody):
                 image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
                 print('image_obj: ', image_obj)
                 
-                image_content = image_obj['Body'].read().decode("utf-8")
+                image_content = image_obj['Body'].read()
                 print('image_content: ', image_content)
-                #img_base64 = Image.open(BytesIO(image_content))
+                img = Image.open(BytesIO(image_content))
+                buffer = BytesIO()
+                img.save(buffer, format="PNG")
+                img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
                 
                 #img_base64 = base64.encode(Image.open(BytesIO(image_content)))
-                img_base64 = base64.encode(image_content)
+                #img_base64 = base64.encode(image_content)
                 
                 
                 chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
