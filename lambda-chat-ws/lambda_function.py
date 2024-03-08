@@ -1286,13 +1286,18 @@ def getResponse(connectionId, jsonBody):
                 print('multimodal: ', object)
                 
                 s3_client = boto3.client('s3') 
-                image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
+                with open('filename', 'wb') as data:
+                    img_base64 = s3_client.download_fileobj(s3_bucket, s3_prefix+'/'+object, base64.encode(data))
+                    
+                #s3_client.download_fileobj('mybucket', 'mykey', Base64Encoder(f))
                 
-                image_content = image_obj['Body'].read()
+                #image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
+                
+                #image_content = image_obj['Body'].read()
                 #img_base64 = Image.open(BytesIO(image_content))
                 
                 #img_base64 = base64.encode(Image.open(BytesIO(image_content)))
-                img_base64 = base64.encode(image_content).decode("utf-8")
+                #img_base64 = base64.encode(image_content).decode("utf-8")
                 
                 
                 chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
