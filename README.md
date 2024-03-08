@@ -22,7 +22,7 @@ LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 
 
 ### Claude3 API
 
-Claude3부터는  Parameter의 경우에 max_tokens_to_sample이 max_tokens로 변경되었습니다. 세부 코드는 [lambda-chat-ws](./lambda-chat-ws/lambda_function.py)을 참조합니다. 
+Claude3부터는  Parameter의 경우에 max_tokens_to_sample이 max_tokens로 변경되었습니다. 상세한 코드는 [lambda-chat-ws](./lambda-chat-ws/lambda_function.py)을 참조합니다. 
 
 ```python
 import boto3
@@ -148,6 +148,35 @@ def translate_text(chat, text):
         
     msg = result.content
     return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
+```
+
+### OpenSearch에 문서 등록하기
+
+파일이 S3에 저장될때 발생하는 putEvent를 받아서 OpenSearch에 문서를 저장합니다. 이때, 저장되는 index에 documentId를 조합합니다. 만약 기존에 동일한 문서가 업로드 되었다면 삭제후 등록을 수행합니다. 상세한 코드는 [lambda-document-manager](./lambda-document-manager/lambda_function.py)을 참조합니다. 
+
+```python
+def store_document_for_opensearch(bedrock_embeddings, docs, documentId):
+    index_name = get_index_name(documentId)
+    
+    delete_index_if_exist(index_name)
+
+        vectorstore = OpenSearchVectorSearch(
+            index_name=index_name,  
+            is_aoss = False,
+            #engine="faiss",  # default: nmslib
+            embedding_function = bedrock_embeddings,
+            opensearch_url = opensearch_url,
+            http_auth=(opensearch_account, opensearch_passwd),
+        )
+        response = vectorstore.add_documents(docs, bulk_size = 2000)
+
+def get_index_name(documentId):
+    index_name = "idx-"+documentId
+                                                    
+    if len(index_name)>=100: # reduce index size
+        index_name = 'idx-'+index_name[len(index_name)-100:]
+    
+    return index_name
 ```
 
 ### Google Search API 활용
