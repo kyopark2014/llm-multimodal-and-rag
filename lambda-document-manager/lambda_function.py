@@ -341,6 +341,8 @@ def check_supported_type(key, file_type, size):
         return True
     if size > 0 and (file_type == 'txt' or file_type == 'md' or file_type == 'py' or file_type == 'js'):
         return True
+    elif size > 0 and (file_type == 'png' or file_type == 'jpeg' or file_type == 'jpg'):
+        return True
     else:
         return False
 
