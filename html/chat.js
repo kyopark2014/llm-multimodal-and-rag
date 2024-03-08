@@ -561,6 +561,12 @@ attachFile.addEventListener('click', function(){
             else if(ext == 'md') {
                 contentType = 'text/markdown'
             }
+            else if(ext == 'png') {
+                contentType = 'image/png'
+            }
+            else if(ext == 'jpeg' || ext == 'jpg') {
+                contentType = 'image/jpeg'
+            }
             console.log('contentType: ', contentType)
 
             let current = new Date();

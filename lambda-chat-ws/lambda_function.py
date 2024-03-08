@@ -1,3 +1,4 @@
+import io
 import json
 import boto3
 import os
@@ -11,6 +12,9 @@ import re
 from urllib import parse
 
 from botocore.config import Config
+from PIL import Image
+
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -25,6 +29,7 @@ from googleapiclient.discovery import build
 from langchain_community.chat_models import BedrockChat
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage
 
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -572,6 +577,38 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
         raise Exception ("Not able to request to LLM")
 
     return msg
+
+def analyze_image(chat, img_base64, query):
+    if query == "":
+        query = "What is this?"
+    
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_base64}", 
+                    },
+                },
+                {
+                    "type": "text", "text": query
+                },
+            ]
+        )
+    ]
+    
+    try: 
+        result = chat.invoke(messages)
+        
+        summary = result.content
+        print('result of code summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
 
 # load documents from s3 
 def load_document(file_type, s3_file_name):
@@ -1210,7 +1247,15 @@ def getResponse(connectionId, jsonBody):
                 
                 contents = doc.get()['Body'].read().decode('utf-8')
                                 
-                msg = summary_of_code(chat, contents, file_type)                        
+                msg = summary_of_code(chat, contents, file_type)          
+            
+            elif file_type == 'png':
+                s3_client = boto3.client('s3') 
+                image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
+                
+                image_content = image_obj['Body'].read()
+                img_base64 = Image.open(io.BytesIO(image_content))
+                msg = analyze_image(chat, img_base64, "")              
                                 
             else:
                 msg = "uploaded file: "+object
