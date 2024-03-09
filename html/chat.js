@@ -517,7 +517,8 @@ attachFile.addEventListener('click', function(){
     let input = $(document.createElement('input')); 
     input.attr("type", "file");
     input.trigger('click');    
-    
+    let commend = message.value;
+
     $(document).ready(function() {
         input.change(function(evt) {
             var input = this;
@@ -562,12 +563,11 @@ attachFile.addEventListener('click', function(){
             }
             else if(ext == 'png') {
                 contentType = 'image/png'
-
-                let commend = message.value
                 message.value = "";
             }
             else if(ext == 'jpeg' || ext == 'jpg') {
                 contentType = 'image/jpeg'
+                message.value = "";
             }
             console.log('contentType: ', contentType)
 
