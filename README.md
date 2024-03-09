@@ -6,7 +6,7 @@ LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 
 
 서버리스 Architecture를 이용하여 RAG가 적용된 Chatbot 인프라를 구성하면, 트래픽의 변화에 유연하게 대응할 수 있으며, 유지보수에 대한 부담도 줄일 수 있습니다. 주요 구현 사항은 아래와 같습니다.
 
-- Multi modal: Text뿐 아니라 이미지를 LLM으로 처리합니다.
+- Multimodal: Text뿐 아니라 이미지를 분석할 수 있습니다. 
 - Multi-Region LLM: [분당 Request와 토큰 수](https://docs.aws.amazon.com/bedrock/latest/userguide/quotas.html)의 제한을 완화하기 위하여 여러 Region의 LLM을 활용합니다.
 - RAG 구성: OpenSearch의 Vector 검색을 이용하여 빠르고 성능이 우수한 RAG를 구성할 수 있습니다.
 - 인터넷 검색: RAG에 관련된 문서가 없을 경우에 Google으 Search API를 활용하여 검색된 결과를 활용합니다.
