@@ -614,7 +614,7 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
 def use_multimodal(chat, img_base64, query):    
     if query == "":
         # query = "What is this?"
-        query = "그림에 대해 500자 이내로 설명해줘."
+        query = "그림에 대해 500자 이내의 한국어로 설명해줘."
     
     messages = [
         HumanMessage(
