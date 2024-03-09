@@ -119,40 +119,6 @@ def get_chat(profile_of_LLMs, selected_LLM):
     
     return chat
 
-def get_chat_without_stream(profile_of_LLMs, selected_LLM):
-    profile = profile_of_LLMs[selected_LLM]
-    bedrock_region =  profile['bedrock_region']
-    modelId = profile['model_id']
-    print(f'LLM: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    maxOutputTokens = int(profile['maxOutputTokens'])
-                          
-    # bedrock   
-    boto3_bedrock = boto3.client(
-        service_name='bedrock-runtime',
-        region_name=bedrock_region,
-        config=Config(
-            retries = {
-                'max_attempts': 30
-            }            
-        )
-    )
-    parameters = {
-        "max_tokens":maxOutputTokens,     
-        "temperature":0.1,
-        "top_k":250,
-        "top_p":0.9,
-        "stop_sequences": [HUMAN_PROMPT]
-    }
-    # print('parameters: ', parameters)
-
-    chat = BedrockChat(
-        model_id=modelId,
-        client=boto3_bedrock, 
-        model_kwargs=parameters,
-    )        
-    
-    return chat
-
 def get_embedding(profile_of_LLMs, selected_LLM):
     profile = profile_of_LLMs[selected_LLM]
     bedrock_region =  profile['bedrock_region']
