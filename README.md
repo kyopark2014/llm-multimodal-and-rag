@@ -15,7 +15,7 @@ LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 
 - 지속적인 대화: API Gateway를 이용하여 WebSocket을 구성하므로써 양방향 대화를 구현할 수 있습니다.
 - 편리한 배포: AWS CDK로 관련된 인프라를 배포하고 편리하게 관리할 수 있습니다. 
 
-<img src="https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/aa08cdf9-38c4-433d-9a09-3e49af23ee0b" width="800">
+<img src="https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/764b8271-724f-45ab-9aca-1698dea01c25" width="800">
 
 
 ## 주요 시스템 구성
