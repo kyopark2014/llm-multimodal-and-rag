@@ -301,7 +301,7 @@ if len(selected_relevant_docs)==0:  # google api
 
 [emotion-garden.jpg](./contents/emotion-garden.jpg) 파일을 다운로드합니다.   
 
-<img src="./contents/logo-langchain.png" width="300">
+<img src="./contents/emotion-garden.jpg" width="300">
 
 이후에 동일한 방법으로 파일을 업로드하고 결과를 확인합니다.
 
