@@ -333,7 +333,7 @@ if len(selected_relevant_docs)==0:  # google api
 
 
 ```text
-cd ~/environment/rag-code-generation/cdk-llm-claude3/ && cdk destroy --all
+cd ~/environment/llm-multimodal-and-rag/cdk-multimodal-and-rag/ && cdk destroy --all
 ```
 
 ## 결론
