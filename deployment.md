@@ -85,7 +85,7 @@ cdk deploy --all
 
 [새 검색엔진 만들기](https://programmablesearchengine.google.com/controlpanel/create?hl=ko)에서 검색엔진을 설정합니다. 이때, 검색할 내용은 "전체 웹 검색"을 선택하여야 합니다.
 
-[Secret Console](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=googl_api_key&region=ap-northeast)에 접속하여 [Retrieve secret value]를 선택하여, google_api_key와 google_cse_id를 업데이트합니다.
+[Secret Console](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=googl_api_key&region=ap-northeast-2)에 접속하여 [Retrieve secret value]를 선택하여, google_api_key와 google_cse_id를 업데이트합니다.
 
 10) Output의 WebUrlforllmmultimodalandrag 복사하여 브라우저로 접속합니다.
 
