@@ -643,6 +643,37 @@ def use_multimodal(chat, img_base64, query):
     
     return summary
 
+def extract_text(chat, img_base64):    
+    query = "텍스트를 추출해서 utf8로 변환하세요. <result> tag를 붙여주세요."
+    
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_base64}", 
+                    },
+                },
+                {
+                    "type": "text", "text": query
+                },
+            ]
+        )
+    ]
+    
+    try: 
+        result = chat.invoke(messages)
+        
+        summary = result.content
+        print('result of code summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
+
 # load documents from s3 
 def load_document(file_type, s3_file_name):
     s3r = boto3.resource("s3")
@@ -1074,8 +1105,7 @@ def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_em
                 sendErrorMessage(connectionId, requestId, "Not able to use Google API. Check the credentials")    
                 #sendErrorMessage(connectionId, requestId, err_msg)    
                 #raise Exception ("Not able to search using google api") 
-                
-    
+                    
     end_time_for_priority_search = time.time() 
     time_for_priority_search = end_time_for_priority_search - start_time_for_priority_search
     print('processing time for priority search: ', time_for_priority_search)
@@ -1313,7 +1343,14 @@ def getResponse(connectionId, jsonBody):
                 commend  = jsonBody['commend']
                 print('commend: ', commend)
                 
-                msg = use_multimodal(chat, img_base64, commend)              
+                # verify the image
+                msg = use_multimodal(chat, img_base64, commend)       
+                
+                # extract text from the image
+                extracted_text = extract_text(chat, img_base64)
+                print('extracted_text: ', extracted_text)
+                if len(extracted_text)>10:
+                    msg = msg + f"\n\n[추출된 Text]\n{extracted_text}\n"
                                                 
             else:
                 msg = "uploaded file: "+object
