@@ -87,7 +87,7 @@ cdk deploy --all
 
 [Secret Console](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=googl_api_key&region=ap-northeast)에 접속하여 [Retrieve secret value]를 선택하여, google_api_key와 google_cse_id를 업데이트합니다.
 
-10) WebUrl를 선택하여 브라우저로 접속합니다.
+10) Output의 WebUrlforllmmultimodalandrag 복사하여 브라우저로 접속합니다.
 
 ## [참고] S3 Bucket 이름 지정하기
 
