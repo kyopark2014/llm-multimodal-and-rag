@@ -294,6 +294,9 @@ if len(selected_relevant_docs)==0:  # google api
 
 ![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/d8252ef0-1d31-4add-9ae1-ba43bbb68dfa)
 
+[emotion-garden.jpg](./contents/emotion-garden.jpg) 파일을 다운로드 한 후에 동일하게 업로드 합니다.
+
+![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/edeea4a1-7f50-4c20-a12b-295dc17033e9)
 
 
 ### RAG 활용하기
