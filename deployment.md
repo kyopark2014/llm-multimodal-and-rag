@@ -91,7 +91,8 @@ cdk deploy --all
 Build 정보를 가지고 있는 [cdk-multimodal-and-rag-stack.ts](https://github.com/kyopark2014/llm-multimodal-and-rag/blob/main/cdk-multimodal-and-rag/lib/cdk-multimodal-and-rag-stack.ts)에서 Bucket 이름을 지정하는 방법은 아래와 같습니다. S3의 Bucket 이름은 AWS 전세계 리전에서 유일하므로 동일한 이름을 사용하면 빌드 에러가 발생합니다. 아래와 같이 bucketName을 원하는 이름으로 변경하고 bucketName 설정하는 부분에 대한 주석을 제거합니다. 이를 변경하지 않을 경우에 cdk로 시작하는 임의의 bucket명을 자동으로 생성하여 사용하게 됩니다. 
 
 ```typescript
-const bucketName = `storage-for-${projectName}-${region}`;   <-------- 1) 이름 변경
+const projectName = `llm-multimodal-and-rag`; <-------- 1) 이름 변경
+const bucketName = `storage-for-${projectName}-${region}`;   
 
 // s3 
 const s3Bucket = new s3.Bucket(this, `storage-${projectName}`, {
