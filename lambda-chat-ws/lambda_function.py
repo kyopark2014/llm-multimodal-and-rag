@@ -613,7 +613,8 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
 
 def use_multimodal(chat, img_base64, query):    
     if query == "":
-        query = "What is this?"
+        # query = "What is this?"
+        query = "그림에 대해 500자 이내로 설명해줘."
     
     messages = [
         HumanMessage(
@@ -1282,7 +1283,7 @@ def getResponse(connectionId, jsonBody):
                                 
                 msg = summary_of_code(chat, contents, file_type)          
             
-            elif file_type == 'png':
+            elif file_type == 'png' or file_type == 'jpeg' or file_type == 'jpg':
                 print('multimodal: ', object)
                 
                 s3_client = boto3.client('s3') 
@@ -1291,15 +1292,10 @@ def getResponse(connectionId, jsonBody):
                 print('image_obj: ', image_obj)
                 
                 image_content = image_obj['Body'].read()
-                print('image_content: ', image_content)
                 img = Image.open(BytesIO(image_content))
                 buffer = BytesIO()
                 img.save(buffer, format="PNG")
                 img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-                
-                #img_base64 = base64.encode(Image.open(BytesIO(image_content)))
-                #img_base64 = base64.encode(image_content)
-                
                 
                 chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
                 msg = use_multimodal(chat, img_base64, "")              
