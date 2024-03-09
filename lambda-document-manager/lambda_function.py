@@ -749,7 +749,8 @@ def lambda_handler(event, context):
                                                     
                     # extract text from the image
                     chat = get_chat(profile_of_LLMs, 0)    
-                    extracted_text = extract_text(chat, img_base64)
+                    text = extract_text(chat, img_base64)
+                    extracted_text = text[text.find('<result>')+8:len(text)-9] # remove <result> tag
                     print('extracted_text: ', extracted_text)
                     if len(extracted_text)>10:
                         docs.append(
