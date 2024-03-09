@@ -612,9 +612,47 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
     return msg
 
 def use_multimodal(chat, img_base64, query):    
-    if query == "":
-        # query = "What is this?"
-        query = "그림에 대해 500자 이내의 한국어로 설명해줘."
+    query = "그림에 대해 500자 이내의 한국어로 설명해줘."
+    
+    system = (
+        "그림에 대해 500자 이내의 한국어로 설명해."
+    )
+    
+    human = (
+        """[{
+            "type": "image_url",
+            "image_url": {
+                    "url": f"data:image/png;base64,{img_base64}", 
+                },
+            },
+            {
+                "type": "text", "text": {query}
+            }]"""
+    )
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+                   
+    chain = prompt | chat    
+    try: 
+        result = chain.invoke(
+            {   
+                "img_base64": img_base64,
+                "query": query
+            }
+        )
+        
+        summary = result.content
+        print('result of code summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
+    
+def use_multimodal_without_query(chat, img_base64):    
+    query = "그림에 대해 500자 이내의 한국어로 설명해줘."
     
     messages = [
         HumanMessage(
