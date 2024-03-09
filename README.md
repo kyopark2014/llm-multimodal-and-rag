@@ -313,7 +313,7 @@ if len(selected_relevant_docs)==0:  # google api
 
 <img src="./contents/profit_table.png" width="300">
 
-[profit_table.png](./contents/profit_table.png)을 업로드한 후에 채팅창에 "AJ네트웍스의 PER값은?"라고 입력후에 결과를 확인하면 아래와 같습니다.
+[profit_table.png](./contents/profit_table.png)을 업로드한 후에 채팅창에 "AJ네트웍스의 PER값은?"라고 입력하면, profit_table.png에서 추출된 표로부터 아래와 같은 결과를 얻을수 있습니다.
 
 ![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/de4ab4fc-97ba-4de9-9a92-6715ba320f37)
 
