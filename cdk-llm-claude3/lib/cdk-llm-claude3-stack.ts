@@ -2,7 +2,6 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
-import * as logs from "aws-cdk-lib/aws-logs"
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudFront from 'aws-cdk-lib/aws-cloudfront';
@@ -22,7 +21,7 @@ const region = process.env.CDK_DEFAULT_REGION;
 const debug = false;
 const stage = 'dev';
 const s3_prefix = 'docs';
-const projectName = `llm-claud-with-rag`; 
+const projectName = `llm-multimodal-and-rag`; 
 const bucketName = `storage-for-${projectName}-${region}`; 
 
 const opensearch_account = "admin";

@@ -147,7 +147,7 @@ function connect(endpoint, type) {
                 if(!indexList.get(response.request_id+':receive')) { // the first received message
                     let current = new Date();
                     let elapsed = (current - sentTime.get(response.request_id))/1000;
-                    console.log('elapsed time: ', elapsed);
+                    // console.log('elapsed time: ', elapsed);
                 }
                 // console.log('response: ', response);
 

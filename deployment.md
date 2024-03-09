@@ -37,13 +37,13 @@ chmod a+rx resize.sh && ./resize.sh 80
 4) 소스를 다운로드합니다.
 
 ```java
-git clone https://github.com/kyopark2014/korean-chatbot-using-amazon-bedrock
+git clone https://github.com/kyopark2014/llm-multimodal-and-rag
 ```
 
 5) cdk 폴더로 이동하여 필요한 라이브러리를 설치합니다.
 
 ```java
-cd korean-chatbot-using-amazon-bedrock/cdk-korean-chatbot/ && npm install
+cd llm-multimodal-and-rag/cdk-multimodal-and-rag/ && npm install
 ```
 
 6) CDK 사용을 위해 Boostraping을 수행합니다.
@@ -68,13 +68,13 @@ cdk deploy --all
 
 설치가 완료되면 아래와 같은 Output이 나옵니다. 
 
-![image](https://github.com/kyopark2014/korean-chatbot-using-amazon-bedrock/assets/52392004/766b4d33-13c9-49b1-9462-832120f73109)
+![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/766b4d33-13c9-49b1-9462-832120f73109)
 
 8) HTMl 파일을 S3에 복사합니다.
 
 아래와 같이 Output의 HtmlUpdateCommend을 붙여넣기 합니다. 
 
-![image](https://github.com/kyopark2014/korean-chatbot-using-amazon-bedrock/assets/52392004/130bae3d-3bde-43a8-8bcb-55cee1e06e42)
+![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/130bae3d-3bde-43a8-8bcb-55cee1e06e42)
 
 9) Google API Key Update하기
 
@@ -88,7 +88,7 @@ cdk deploy --all
 
 ## [참고] S3 Bucket 이름 지정하기
 
-Build 정보를 가지고 있는 [cdk-korean-chatbot-stack.ts](https://github.com/kyopark2014/korean-chatbot-using-amazon-bedrock/blob/main/cdk-korean-chatbot/lib/cdk-korean-chatbot-stack.ts)에서 Bucket 이름을 지정하는 방법은 아래와 같습니다. S3의 Bucket 이름은 AWS 전세계 리전에서 유일하므로 동일한 이름을 사용하면 빌드 에러가 발생합니다. 아래와 같이 bucketName을 원하는 이름으로 변경하고 bucketName 설정하는 부분에 대한 주석을 제거합니다. 이를 변경하지 않을 경우에 cdk로 시작하는 임의의 bucket명을 자동으로 생성하여 사용하게 됩니다. 
+Build 정보를 가지고 있는 [cdk-multimodal-and-rag-stack.ts](https://github.com/kyopark2014/llm-multimodal-and-rag/blob/main/cdk-multimodal-and-rag/lib/cdk-multimodal-and-rag-stack.ts)에서 Bucket 이름을 지정하는 방법은 아래와 같습니다. S3의 Bucket 이름은 AWS 전세계 리전에서 유일하므로 동일한 이름을 사용하면 빌드 에러가 발생합니다. 아래와 같이 bucketName을 원하는 이름으로 변경하고 bucketName 설정하는 부분에 대한 주석을 제거합니다. 이를 변경하지 않을 경우에 cdk로 시작하는 임의의 bucket명을 자동으로 생성하여 사용하게 됩니다. 
 
 ```typescript
 const bucketName = `storage-for-${projectName}-${region}`;   <-------- 1) 이름 변경
