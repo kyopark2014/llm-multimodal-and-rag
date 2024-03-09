@@ -290,11 +290,20 @@ if len(selected_relevant_docs)==0:  # google api
 
 ### Multimodel
 
-[logo-langchain.png](./contents/logo-langchain.png) 파일을 다운로드 한 후에 채팅창 아래의 파일 버튼을 선택하여 업로드합니다. 이때의 결과는 아래와 같습니다.
+[logo-langchain.png](./contents/logo-langchain.png) 파일을 다운로드합니다.
+
+<img src="./contents/logo-langchain.png" width="300">
+
+
+이후에 채팅창 아래의 파일 버튼을 선택하여 업로드합니다. 이때의 결과는 아래와 같습니다.
 
 ![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/d8252ef0-1d31-4add-9ae1-ba43bbb68dfa)
 
-[emotion-garden.jpg](./contents/emotion-garden.jpg) 파일을 다운로드 한 후에 동일하게 업로드 합니다.
+[emotion-garden.jpg](./contents/emotion-garden.jpg) 파일을 다운로드합니다.   
+
+<img src="./contents/logo-langchain.png" width="300">
+
+이후에 동일한 방법으로 파일을 업로드하고 결과를 확인합니다.
 
 ![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/edeea4a1-7f50-4c20-a12b-295dc17033e9)
 
