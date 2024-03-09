@@ -13,7 +13,6 @@ from urllib import parse
 from botocore.config import Config
 from PIL import Image
 
-
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -1318,7 +1317,7 @@ def getResponse(connectionId, jsonBody):
                 s3_client = boto3.client('s3') 
                     
                 image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
-                print('image_obj: ', image_obj)
+                # print('image_obj: ', image_obj)
                 
                 image_content = image_obj['Body'].read()
                 img = Image.open(BytesIO(image_content))

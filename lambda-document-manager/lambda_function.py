@@ -5,10 +5,12 @@ import traceback
 import PyPDF2
 import time
 import docx
+import base64
 
 from io import BytesIO
 from urllib import parse
 from botocore.config import Config
+from PIL import Image
 from urllib.parse import unquote_plus
 from langchain_community.embeddings import BedrockEmbeddings
 from langchain_community.vectorstores.opensearch_vector_search import OpenSearchVectorSearch
@@ -20,6 +22,7 @@ from multiprocessing import Process, Pipe
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.chat_models import BedrockChat
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_core.messages import HumanMessage, SystemMessage
 
 s3 = boto3.client('s3')
 
@@ -36,6 +39,7 @@ sqsUrl = os.environ.get('sqsUrl')
 doc_prefix = s3_prefix+'/'
 
 sqs = boto3.client('sqs')
+s3_client = boto3.client('s3')  
 
 roleArn = os.environ.get('roleArn') 
 path = os.environ.get('path')
@@ -524,6 +528,37 @@ def summarize_relevant_codes_using_parallel_processing(codes, key):
     
     return relevant_codes
 
+def extract_text(chat, img_base64):    
+    query = "텍스트를 추출해서 utf8로 변환하세요. <result> tag를 붙여주세요."
+    
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_base64}", 
+                    },
+                },
+                {
+                    "type": "text", "text": query
+                },
+            ]
+        )
+    ]
+    
+    try: 
+        result = chat.invoke(messages)
+        
+        summary = result.content
+        print('result of code summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
+
 def get_documentId(key, category):
     documentId = category + "-" + key
     documentId = documentId.replace(' ', '_') # remove spaces  
@@ -618,6 +653,8 @@ def lambda_handler(event, context):
             if check_supported_type(key, file_type, size): 
                 if file_type == 'py' or file_type == 'js':  # for code
                     category = file_type
+                #elif file_type == 'png' or file_type == 'jpg' or file_type == 'jpeg':
+                #    category = 'img'
                 else:
                     category = "upload" # for document
                 documentId = get_documentId(key, category)                                
@@ -683,12 +720,53 @@ def lambda_handler(event, context):
                                             'function_name': function_name
                                         }
                                     )
-                                )                 
+                                )         
+                                
+                elif file_type == 'png' or file_type == 'jpg' or file_type == 'jpeg':
+                    print('extract text from an image: ', key) 
+                                       
+                    image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
+                
+                    image_content = image_obj['Body'].read()
+                    img = Image.open(BytesIO(image_content))
+                
+                    width, height = img.size 
+                    print(f"width: {width}, height: {height}, size: {width*height}")
+                
+                    isResized = False
+                    while(width*height > 5242880):                    
+                        width = int(width/2)
+                        height = int(height/2)
+                        isResized = True
+                        print(f"width: {width}, height: {height}, size: {width*height}")
+                
+                    if isResized:
+                        img = img.resize((width, height))
+                
+                    buffer = BytesIO()
+                    img.save(buffer, format="PNG")
+                    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+                                                    
+                    # extract text from the image
+                    chat = get_chat(profile_of_LLMs, 0)    
+                    extracted_text = extract_text(chat, img_base64)
+                    print('extracted_text: ', extracted_text)
+                    if len(extracted_text)>10:
+                        docs.append(
+                            Document(
+                                page_content=extracted_text,
+                                metadata={
+                                    'name': key,
+                                    # 'page':i+1,
+                                    'uri': path+parse.quote(key)
+                                }
+                            )
+                        )        
                                                                                                          
                 print('docs size: ', len(docs))
                 if len(docs)>0:
                     print('docs[0]: ', docs[0])
-                                
+                                    
                     store_document_for_opensearch(bedrock_embeddings, docs, documentId)
 
             else: # delete if the object is unsupported one for format or size
