@@ -1297,7 +1297,7 @@ def getResponse(connectionId, jsonBody):
                 img.save(buffer, format="PNG")
                 img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
                 
-                chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
+                #chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
                 msg = use_multimodal(chat, img_base64, "")              
                                 
             else:
