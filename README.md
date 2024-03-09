@@ -1,6 +1,6 @@
 # LangChain으로 Multimodal과 RAG 활용하기
 
-LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 [LangChain](https://www.langchain.com/)을 이용하면 쉽고 빠르게 개발할 수 있습니다. [Anthropic Claude3](https://aws.amazon.com/ko/blogs/machine-learning/unlocking-innovation-aws-and-anthropic-push-the-boundaries-of-generative-ai-together/)은 이전 모델 대비 빠른 속도와 높은 정확도를 가지고 있으며 Multimodal을 지원합니다. 하지만, Langchain의 [Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 더이상 사용할 수 없므르ㅗ [BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 이용하여야 합니다. 여기에서는 LangChain의 BedrockChat을 활용하여 Claude3으로 RAG와 Multimodal을 활용하는 방법을 설명합니다.
+LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 [LangChain](https://www.langchain.com/)을 이용하면 쉽고 빠르게 개발할 수 있습니다. [Anthropic Claude3](https://aws.amazon.com/ko/blogs/machine-learning/unlocking-innovation-aws-and-anthropic-push-the-boundaries-of-generative-ai-together/)은 이전 모델 대비 빠른 속도와 높은 정확도를 가지고 있으며 Multimodal을 지원합니다. 하지만, Langchain의 [Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 더이상 사용할 수 없으므로, [BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 이용하여야 합니다. 여기에서는 LangChain의 BedrockChat을 활용하여 Claude3으로 RAG와 Multimodal을 활용하는 방법을 설명합니다.
 
 ## Architecture 개요
 
