@@ -257,6 +257,9 @@ def general_conversation(connectionId, requestId, chat, query):
         
         end_time_for_inference = time.time()
         time_for_inference = end_time_for_inference - start_time_for_inference
+        
+    memory_chain.chat_memory.add_user_message(query)
+    memory_chain.chat_memory.add_ai_message(msg)
     
     return msg
     
@@ -407,14 +410,16 @@ def generate_code(connectionId, requestId, chat, text, context, mode):
     chain = prompt | chat    
     try: 
         isTyping(connectionId, requestId)  
-        result = chain.invoke(
+        stream = chain.invoke(
             {
                 "context": context,
                 "text": text
             }
         )
         
-        geenerated_code = result.content
+        geenerated_code = readStreamMsg(connectionId, requestId, stream.content)
+                              
+        geenerated_code = stream.content        
         print('result of code generation: ', geenerated_code)
     except Exception:
         err_msg = traceback.format_exc()
@@ -1210,7 +1215,7 @@ def getResponse(connectionId, jsonBody):
                 msg  = "The chat memory was intialized in this session."
             else:       
                 if conv_type == 'normal':      # normal
-                    msg = general_conversation(connectionId, requestId, chat, text)                          
+                    msg = general_conversation(connectionId, requestId, chat, text)      
                                     
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
