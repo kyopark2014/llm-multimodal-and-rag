@@ -336,6 +336,16 @@ if len(selected_relevant_docs)==0:  # google api
 cd ~/environment/llm-multimodal-and-rag/cdk-multimodal-and-rag/ && cdk destroy --all
 ```
 
+
 ## 결론
 
 LangChain을 이용하여 Anthropic Claude3.0으로 Multimodal과 RAG를 구현하였습니다. LangChain의 BedrockChat을 활용하였고, Chain을 이용하여 Prompt를 구성하는 방법에 대해 설명하였습니다. 또한 OpenSearch를 이용하여 RAG를 구성하고 대규모로 문서를 처리하기 위한 event driven architecture에 대해 설명하였습니다. 
+
+
+## 참고사항
+
+### Debug 모드 종료하기
+
+메시지 또는 파일 선택시에 아래와 같이 통계 정보를 제공하고 있습니다. 통계를 위해 추가적인 동작을 하므로 빠른 동작을 위해 Debug Mode를 disable할 필요가 있습니다. [cdk-multimodal-and-rag-stack.ts](./cdk-multimodal-and-rag/lib/cdk-multimodal-and-rag-stack.ts)에서 "debugMessageMode"를 "false"로 설정하거나 채팅 창에서 "disableDebug"라고 입력합니다.
+
+![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/f73cfbe8-68ac-4bd5-b9e1-9af250684b75)
