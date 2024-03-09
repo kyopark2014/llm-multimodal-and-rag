@@ -341,4 +341,4 @@ cd ~/environment/rag-code-generation/cdk-llm-claude3/ && cdk destroy --all
 
 ## 결론
 
-Anthropic Claude3.0은 기존 2.1보다 빠르고 가격도 경쟁력이 있습니다. 모델 성능이 대폭 개선되었고 이미지를 처리할 수 있습니다. 여기서는 Claude3.0을 LangChain을 이용하여 홀용하기 위하여 BedrockChat을 활용하였고, Chain을 이용하여 Prompt를 구성하는 방법에 대해 설명하였습니다. 또한 OpenSearch를 이용하여 RAG를 구성하고 대규모로 문서를 처리하기 위한 event driven architecture에 대해 설명하였습니다. 
+LangChain을 이용하여 Anthropic Claude3.0으로 Multimodal과 RAG를 구현하였습니다. LangChain의 BedrockChat을 활용하였고, Chain을 이용하여 Prompt를 구성하는 방법에 대해 설명하였습니다. 또한 OpenSearch를 이용하여 RAG를 구성하고 대규모로 문서를 처리하기 위한 event driven architecture에 대해 설명하였습니다. 
