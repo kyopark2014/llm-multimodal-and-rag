@@ -62,9 +62,6 @@ Claude3은 Multimodal을 지원하므로 이미지에 대한 분석을 할 수 �
 
 ```python
 def use_multimodal(chat, img_base64, query):    
-    if query == "":
-        query = "그림에 대해 500자 이내의 한국어로 설명해줘."
-    
     messages = [
         SystemMessage(content="답변은 500자 이내의 한국어로 설명해줘."),
         HumanMessage(
