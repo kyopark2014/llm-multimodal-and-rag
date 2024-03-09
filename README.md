@@ -254,6 +254,11 @@ if len(selected_relevant_docs)==0:  # google api
 
 ## 실행결과
 
+### Multimodel
+
+[logo-langchain.png](./contents/logo-langchain.png) 파일을 다운로드 한 후에 채팅창 아래의 파일 버튼을 선택하여 업로드합니다.
+
+
 ### RAG 활용하기
 
 "Conversation Type"에서 [RAG - opensearch]을 선택한 후에, [error_code.pdf](./contents/error_code.pdf)을 다운로드하여 채팅창 아래의 파일 아이콘을 이용하여 업로드합니다. 이후 아래처럼 채팅창에 "보일러 에러코드에 대해 설명하여 주세요."을 입력하면, 아래와 같은 결과를 얻을 수 있습니다.
