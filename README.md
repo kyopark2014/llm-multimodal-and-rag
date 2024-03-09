@@ -292,7 +292,7 @@ if len(selected_relevant_docs)==0:  # google api
 
 ### Multimodel
 
-[logo-langchain.png](./contents/logo-langchain.png) 파일을 다운로드합니다.
+"Conversation Type"에서 [General Conversation]을 선택한 후에 [logo-langchain.png](./contents/logo-langchain.png) 파일을 다운로드합니다.
 
 <img src="./contents/logo-langchain.png" width="300">
 
@@ -308,6 +308,14 @@ if len(selected_relevant_docs)==0:  # google api
 채팅창에 "그림속의 행사 이름만을 정확히 알려주세요. \<result\> 태그를 붙여주세요."라고 입력하고, [emotion-garden.jpg](./contents/emotion-garden.jpg)을 업로드하면 질문에 맞는 동작을 수행합니다. 이때의 결과는 아래와 같습니다. 
 
 ![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/02841097-4b67-4d2c-9342-c4c81de7848e)
+
+[profit_table.png](./contents/profit_table.png) 파일을 다운로드합니다.  
+
+<img src="./contents/profit_table.png" width="300">
+
+[profit_table.png](./contents/profit_table.png)을 업로드한 후에 채팅창에 "AJ네트웍스의 PER값은?"라고 입력후에 결과를 확인하면 아래와 같습니다.
+
+![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/de4ab4fc-97ba-4de9-9a92-6715ba320f37)
 
 
 ### RAG 활용하기
