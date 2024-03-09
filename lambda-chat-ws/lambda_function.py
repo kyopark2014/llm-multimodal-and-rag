@@ -1351,6 +1351,9 @@ def getResponse(connectionId, jsonBody):
                 print('extracted_text: ', extracted_text)
                 if len(extracted_text)>10:
                     msg = msg + f"\n\n[추출된 Text]\n{extracted_text}\n"
+                
+                memory_chain.chat_memory.add_user_message(f"{object}에서 텍스트를 추출하세요.")  # append new diaglog
+                memory_chain.chat_memory.add_ai_message(extracted_text)
                                                 
             else:
                 msg = "uploaded file: "+object
