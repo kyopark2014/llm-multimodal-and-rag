@@ -381,7 +381,7 @@ def get_summary(chat, docs):
     
     return summary
 
-def generate_code(chat, text, context, mode):
+def generate_code(connectionId, requestId, chat, text, context, mode):
     if mode == 'py':    
         system = (
             """다음의 <context> tag안에는 질문과 관련된 python code가 있습니다. 주어진 예제를 참조하여 질문과 관련된 python 코드를 생성합니다. Assistant의 이름은 서연입니다. 결과는 <result> tag를 붙여주세요.
@@ -406,6 +406,7 @@ def generate_code(chat, text, context, mode):
     
     chain = prompt | chat    
     try: 
+        isTyping(connectionId, requestId)  
         result = chain.invoke(
             {
                 "context": context,
@@ -413,14 +414,14 @@ def generate_code(chat, text, context, mode):
             }
         )
         
-        summary = result.content
-        print('result of summarization: ', summary)
+        geenerated_code = result.content
+        print('result of code generation: ', geenerated_code)
     except Exception:
         err_msg = traceback.format_exc()
         print('error message: ', err_msg)                    
         raise Exception ("Not able to request to LLM")
     
-    return summary
+    return geenerated_code
 
 def summary_of_code(chat, code, mode):
     if mode == 'py':
@@ -938,7 +939,7 @@ def retrieve_docs_from_vectorstore(vectorstore_opensearch, query, top_k):
         
     return relevant_docs
 
-def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type):
+def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding):
     global time_for_revise, time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs 
     time_for_revise = time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = 0
     
@@ -953,7 +954,7 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
     print('processing time for revised question: ', time_for_revise)
     
     # retrieve relevant documents from RAG
-    selected_relevant_docs = retrieve_docs_from_RAG(text, connectionId, requestId, bedrock_embedding, rag_type)
+    selected_relevant_docs = retrieve_docs_from_RAG(text, connectionId, requestId, bedrock_embedding)
     
     # get context
     relevant_context = ""
@@ -989,7 +990,7 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
 
     return msg, reference
     
-def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_embedding, rag_type):
+def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_embedding):
     vectorstore_opensearch = OpenSearchVectorSearch(
         index_name = "idx-*", # all
         is_aoss = False,
@@ -1003,7 +1004,7 @@ def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_em
          
     relevant_docs = [] 
     rel_docs = retrieve_docs_from_vectorstore(vectorstore_opensearch=vectorstore_opensearch, query=revised_question, top_k=top_k)
-    print(f'rel_docs ({rag_type}): '+json.dumps(rel_docs))
+    print(f'rel_docs: '+json.dumps(rel_docs))
                 
     if(len(rel_docs)>=1):
         for doc in rel_docs:
@@ -1213,7 +1214,7 @@ def getResponse(connectionId, jsonBody):
                                     
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
-                    msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding, rag_type)
+                    msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding)
                     
                 elif conv_type == 'translation':                    
                     msg = translate_text(chat, text)
