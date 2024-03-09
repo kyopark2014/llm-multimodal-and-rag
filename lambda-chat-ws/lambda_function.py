@@ -79,8 +79,7 @@ print('connection_url: ', connection_url)
 HUMAN_PROMPT = "\n\nHuman:"
 AI_PROMPT = "\n\nAssistant:"
 
-map_chain = dict() # For RAG
-map_chat = dict() # For general conversation  
+map_chain = dict() 
 
 # Multi-LLM
 def get_chat(profile_of_LLMs, selected_LLM):
@@ -1116,7 +1115,7 @@ def getResponse(connectionId, jsonBody):
             print('rag_type: ', rag_type)
     
     global enableReference
-    global map_chain, map_chat, memory_chain, debugMessageMode, selected_LLM
+    global map_chain, memory_chain, debugMessageMode, selected_LLM
         
     profile_of_LLMs = get_profile(function_type)
     print('length of profile: ', len(profile_of_LLMs))
@@ -1137,7 +1136,7 @@ def getResponse(connectionId, jsonBody):
     bedrock_embedding = get_embedding(profile_of_LLMs, selected_LLM)
 
     # allocate memory
-    if userId in map_chat or userId in map_chain:  
+    if userId in map_chain:  
         print('memory exist. reuse it!')        
         memory_chain = map_chain[userId]
         
