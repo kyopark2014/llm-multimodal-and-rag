@@ -303,7 +303,7 @@ if len(selected_relevant_docs)==0:  # google api
 
 <img src="./contents/emotion-garden.jpg" width="300">
 
-채팅창에 "그림속의 행사 이름만을 정확히 알려주세요. \<result\> 태그를 붙여주세요."이라고 입력하고, emotion-garden.jpg을 선택하여 업로드하면 질문에 맞는 동작을 수행합니다. 이때의 결과는 아래와 같습니다. 
+채팅창에 "그림속의 행사 이름만을 정확히 알려주세요. \<result\> 태그를 붙여주세요."이라고 입력하고, [emotion-garden.jpg](./contents/emotion-garden.jpg)을 선택하여 업로드하면 질문에 맞는 동작을 수행합니다. 이때의 결과는 아래와 같습니다. 
 
 ![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/02841097-4b67-4d2c-9342-c4c81de7848e)
 
