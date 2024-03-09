@@ -725,7 +725,7 @@ def lambda_handler(event, context):
                 elif file_type == 'png' or file_type == 'jpg' or file_type == 'jpeg':
                     print('extract text from an image: ', key) 
                                        
-                    image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
+                    image_obj = s3_client.get_object(Bucket=s3_bucket, Key=key)
                 
                     image_content = image_obj['Body'].read()
                     img = Image.open(BytesIO(image_content))
