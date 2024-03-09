@@ -562,6 +562,9 @@ attachFile.addEventListener('click', function(){
             }
             else if(ext == 'png') {
                 contentType = 'image/png'
+
+                let commend = message.value
+                message.value = "";
             }
             else if(ext == 'jpeg' || ext == 'jpg') {
                 contentType = 'image/jpeg'
@@ -633,6 +636,7 @@ attachFile.addEventListener('click', function(){
                                 "request_time": requestTime,
                                 "type": "document",
                                 "body": filename,
+                                "commend": commend,
                                 "conv_type": conv_type,
                                 "rag_type": rag_type,
                                 "function_type": function_type

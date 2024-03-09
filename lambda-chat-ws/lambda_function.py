@@ -1120,7 +1120,7 @@ def getResponse(connectionId, jsonBody):
         if jsonBody['rag_type']:
             rag_type = jsonBody['rag_type']  # RAG type
             print('rag_type: ', rag_type)
-
+    
     global enableReference
     global map_chain, map_chat, memory_chain, debugMessageMode, selected_LLM
         
@@ -1297,9 +1297,11 @@ def getResponse(connectionId, jsonBody):
                 img.save(buffer, format="PNG")
                 img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
                 
-                #chat = get_chat_without_stream(profile_of_LLMs, selected_LLM)
-                msg = use_multimodal(chat, img_base64, "")              
-                                
+                commend  = jsonBody['commend']
+                print('commend: ', commend)
+                
+                msg = use_multimodal(chat, img_base64, commend)              
+                                                
             else:
                 msg = "uploaded file: "+object
                                                         
