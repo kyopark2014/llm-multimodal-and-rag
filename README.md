@@ -21,53 +21,7 @@ LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 
 
 ## 주요 시스템 구성
 
-### Multimodal 
-
-LangChain의 BedrockChat을 이용하여 chat을 선언합니다. Multimodel은 streaming을 지원하지 않으므로 streaming은 False로 설정하였습니다. 이후 아래와 같이 Base64로 된 이미지를 이용해 query를 수행하면 이미지에 대한 설명을 얻을 수 있습니다.
-
-```python
-chat = BedrockChat(
-    model_id = modelId,
-    client = boto3_bedrock,
-    streaming = False,
-    callbacks = [StreamingStdOutCallbackHandler()],
-    model_kwargs = parameters,
-)
-
-msg = use_multimodal(chat, img_base64, "그림에 대해 500자 이내로 설명해줘.")
-
-def use_multimodal(chat, img_base64, query):    
-    messages = [
-        HumanMessage(
-            content=[
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/png;base64,{img_base64}", 
-                    },
-                },
-                {
-                    "type": "text", "text": query
-                },
-            ]
-        )
-    ]
-    
-    try: 
-        result = chat.invoke(messages)
-        
-        summary = result.content
-        print('result of code summarization: ', summary)
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                    
-        raise Exception ("Not able to request to LLM")
-    
-    return summary
-```
-
-
-### Claude3 API
+### Claude3를 위한 LangChain 설정
 
 Claude3부터는  Parameter의 경우에 max_tokens_to_sample이 max_tokens로 변경되었습니다. 상세한 코드는 [lambda-chat-ws](./lambda-chat-ws/lambda_function.py)을 참조합니다. 
 
@@ -106,6 +60,47 @@ chat = BedrockChat(
 다수의 RAG 문서를 S3에 업로드할때 원할한 처리를 위한 Event driven architecture입니다. RAG용 문서는 채팅 UI에서 파일업로드 버튼을 통해 업로드 할 수 있지만, S3 console 또는 AWS CLI를 이용해 S3에 직접 업로드 할 수 있습니다. 이때, OpenSearch에 문서를 업로드하는 시간보다 더 빠르게 문서가 올라오는 경우에 Queue를 통해 S3 putEvent를 관리하여야 합니다. OpenSearch에 문서 업로드시에 Embedding이 필요하므로 아래와 같이 Multi-Region의 Bedrcok Embedding을 활용합니다. 
 
 ![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/7403e19b-20ca-437b-b2db-725d3c57b4f3)
+
+
+### Multimodal 
+
+Claude3은 Multimodal을 지원하므로 이미지에 대한 분석을 할 수 있습니다. LangChain의 BedrockChat을 이용하여 Multimodel을 활용합니다. Multimodel은 streaming을 지원하지 않으므로 streaming은 False로 설정하였습니다. 이후 아래와 같이 Base64로 된 이미지를 이용해 query를 수행하면 이미지에 대한 설명을 얻을 수 있습니다.
+
+```python
+msg = use_multimodal(chat, img_base64, "그림에 대해 500자 이내로 설명해줘.")
+
+def use_multimodal(chat, img_base64, query):    
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_base64}", 
+                    },
+                },
+                {
+                    "type": "text", "text": query
+                },
+            ]
+        )
+    ]
+    
+    try: 
+        result = chat.invoke(messages)
+        
+        summary = result.content
+        print('result of code summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
+```
+
+
+
 
 ### RAG를 활용하기
 
