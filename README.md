@@ -1,6 +1,6 @@
 # LangChain으로 Multimodal과 RAG 활용하기
 
-LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 [LangChain](https://www.langchain.com/)을 이용하면 쉽고 빠르게 개발할 수 있습니다. [Anthropic Claude3](https://aws.amazon.com/ko/blogs/machine-learning/unlocking-innovation-aws-and-anthropic-push-the-boundaries-of-generative-ai-together/)은 이전 모델 대비 빠른 속도와 높은 정확도를 가지고 있으며 Multimodal을 지원합니다. 하지만, Claude3를 이용하는 어플리케이션은 [LangChain Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 더이상 사용할 수 없으므로, [LangChain BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 이용하여야 합니다. 여기에서는 LangChain의 BedrockChat을 활용하여 Claude3으로 Multimodal과 RAG을 활용하는 방법을 설명합니다.
+LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 [LangChain](https://www.langchain.com/)을 이용하면 쉽고 빠르게 개발할 수 있습니다. 여기에서는 Multimodal을 지원하는 [Anthropic Claude3](https://aws.amazon.com/ko/blogs/machine-learning/unlocking-innovation-aws-and-anthropic-push-the-boundaries-of-generative-ai-together/)을 이용합니다. Claude3를 이용하는 어플리케이션은 이전 모델에서 사용하던 [LangChain Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 사용할 수 없고, [LangChain BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 이용하여야 합니다. BedrockChat은 LangChain의 [chat model component](https://python.langchain.com/docs/integrations/chat/)을 지원하며, Anthropic의 Claude 모델뿐 아니라 AI21 Labs, Cohere, Meta, Stability AI, Amazon Titan을 모두 지원합니다. 여기에서는 LangChain으로 Multimodal을 활용하고 RAG를 구현할 뿐아니라, Prompt engineering을 활용하여, 번역하기, 문법 오류고치기, 코드 요약하기를 구현합니다.
 
 ## Architecture 개요
 
