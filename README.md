@@ -315,7 +315,8 @@ if len(selected_relevant_docs)==0:  # google api
 
 [profit_table.png](./contents/profit_table.png)을 업로드한 후에 채팅창에 "AJ네트웍스의 PER값은?"라고 입력하면, profit_table.png에서 추출된 표로부터 아래와 같은 결과를 얻을수 있습니다.
 
-![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/de4ab4fc-97ba-4de9-9a92-6715ba320f37)
+![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/33ccfc42-114b-426b-851b-3d54a1a6d6f8)
+
 
 
 ### RAG 활용하기
