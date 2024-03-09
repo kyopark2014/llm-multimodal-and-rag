@@ -26,9 +26,8 @@ from multiprocessing import Process, Pipe
 from googleapiclient.discovery import build
 
 from langchain_community.chat_models import BedrockChat
-from langchain_core.prompts import MessagesPlaceholder
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import HumanMessage
+from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
+from langchain_core.messages import HumanMessage, SystemMessage
 
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -611,7 +610,7 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
 
     return msg
 
-def use_multimodal(chat, img_base64, query):    
+def use_multimodal_backup(chat, img_base64, query):    
     print('length of img_base64: ', len(img_base64))
         
     system = (
@@ -652,10 +651,12 @@ def use_multimodal(chat, img_base64, query):
     
     return summary
     
-def use_multimodal_without_query(chat, img_base64):    
-    query = "그림에 대해 500자 이내의 한국어로 설명해줘."
+def use_multimodal(chat, img_base64, query):    
+    if query == "":
+        query = "그림에 대해 500자 이내의 한국어로 설명해줘."
     
     messages = [
+        SystemMessage(content="답변은 500자 이내의 한국어로 설명해줘."),
         HumanMessage(
             content=[
                 {
