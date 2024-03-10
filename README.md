@@ -317,6 +317,22 @@ if len(selected_relevant_docs)==0:  # google api
 
 ![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/33ccfc42-114b-426b-851b-3d54a1a6d6f8)
 
+[claim-form.png](./contents/claim-form.png) 파일을 다운로드합니다.  
+
+<img src="./contents/claim-form.png" width="300">
+
+[claim-form.png](./contents/claim-form.png)를 업로드하면 아래와 같이 표를 포함한 내용에서 중요한 키워드를 추출할 수 있습니다.
+
+![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/88fd8317-3ecd-463a-aaf5-393236586e33)
+
+
+[korean-cloth.jpeg](./contents/korean-cloth.jpeg) 파일을 다운로드합니다.  
+
+<img src="./contents/korean-cloth.jpeg" width="300">
+
+[claim-form.png](./contents/claim-form.png)를 업로드하면 아래와 같이 이미지에 대한 설명을 Text로 얻을 수 있습니다.
+
+![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/90c50e9e-5a13-4529-83bf-f2d1d1d544b7)
 
 
 ### RAG 활용하기
@@ -333,6 +349,7 @@ if len(selected_relevant_docs)==0:  # google api
 이때의 결과는 아래와 같습니다.
 
 ![image](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/eee5b660-cfcd-46ba-a21d-b8ce312efe3c)
+
 
 
 ### 문장 오류 확인
