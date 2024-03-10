@@ -258,9 +258,6 @@ def general_conversation(connectionId, requestId, chat, query):
         end_time_for_inference = time.time()
         time_for_inference = end_time_for_inference - start_time_for_inference
         
-    memory_chain.chat_memory.add_user_message(query)
-    memory_chain.chat_memory.add_ai_message(msg)
-    
     return msg
     
 def translate_text(chat, text):
@@ -990,9 +987,6 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
         relevant_length = len(relevant_context)
         token_counter_relevant_docs = chat.get_num_tokens(relevant_context)
 
-    memory_chain.chat_memory.add_user_message(text)  # append new diaglog
-    memory_chain.chat_memory.add_ai_message(msg)
-
     return msg, reference
     
 def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_embedding):
@@ -1232,6 +1226,9 @@ def getResponse(connectionId, jsonBody):
                     token_counter_input = chat.get_num_tokens(text)
                     token_counter_output = chat.get_num_tokens(msg)
                     print(f"token_counter: question: {token_counter_input}, answer: {token_counter_output}")
+                    
+                memory_chain.chat_memory.add_user_message(text)
+                memory_chain.chat_memory.add_ai_message(msg)
                         
         elif type == 'document':
             isTyping(connectionId, requestId)
