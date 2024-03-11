@@ -131,6 +131,37 @@ if len(extracted_text)>10:
                 
 memory_chain.chat_memory.add_user_message(f"{object}에서 텍스트를 추출하세요.")
 memory_chain.chat_memory.add_ai_message(extracted_text)
+
+def extract_text(chat, img_base64):    
+    query = "텍스트를 추출해서 utf8로 변환하세요. <result> tag를 붙여주세요."
+    
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_base64}", 
+                    },
+                },
+                {
+                    "type": "text", "text": query
+                },
+            ]
+        )
+    ]
+    
+    try: 
+        result = chat.invoke(messages)
+        
+        summary = result.content
+        print('result of code summarization: ', summary)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return summary
 ```
 
 ### RAG를 활용하기
