@@ -111,7 +111,7 @@ def use_multimodal(chat, img_base64, query):
         result = chat.invoke(messages)
         
         summary = result.content
-        print('result of code summarization: ', summary)
+        print('result of summarization: ', summary)
     except Exception:
         err_msg = traceback.format_exc()
         print('error message: ', err_msg)                    
