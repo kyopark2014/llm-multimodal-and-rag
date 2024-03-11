@@ -57,9 +57,35 @@ chat = BedrockChat(
 
 ### Multimodal 활용
 
-Claude3은 Multimodal을 지원하므로 이미지에 대한 분석을 할 수 있습니다. LangChain의 BedrockChat을 이용하여 Multimodel을 활용합니다. 이후 아래와 같이 Base64로 된 이미지를 이용해 query를 수행하면 이미지에 대한 설명을 얻을 수 있습니다.
+Claude3은 Multimodal을 지원하므로 이미지에 대한 분석을 할 수 있습니다. LangChain의 BedrockChat을 이용하여 Multimodel을 활용합니다. 이후 아래와 같이 Base64로 된 이미지를 이용해 query를 수행하면 이미지에 대한 설명을 얻을 수 있습니다. Sonnet에서 처리할 수 있는 이미지의 크기로 resize를 수행하여야 합니다. 사용자의 
 
 ```python
+if file_type == 'png' or file_type == 'jpeg' or file_type == 'jpg':
+    s3_client = boto3.client('s3') 
+                    
+    image_obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_prefix+'/'+object)
+    image_content = image_obj['Body'].read()
+    img = Image.open(BytesIO(image_content))
+                
+    width, height = img.size 
+    print(f"width: {width}, height: {height}, size: {width*height}")
+                
+    isResized = False
+    while(width*height > 5242880):                    
+        width = int(width/2)
+        height = int(height/2)
+        isResized = True
+        print(f"width: {width}, height: {height}, size: {width*height}")
+                
+    if isResized:
+        img = img.resize((width, height))
+                
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+                
+    msg = use_multimodal(chat, img_base64, query)                       
+
 def use_multimodal(chat, img_base64, query):    
     if query == "":
         query = "그림에 대해 상세히 설명해줘."
@@ -92,6 +118,19 @@ def use_multimodal(chat, img_base64, query):
         raise Exception ("Not able to request to LLM")
     
     return summary
+```
+
+이미지에서 텍스트를 추출하는 방법은 아래와 같습니다. 추출된 텍스트를 memory chain에 저장해 놓으면, 이후 추출된 텍스트를 베이스로 답변을 얻을 수 있습니다. 
+
+```
+text = extract_text(chat, img_base64)
+extracted_text = text[text.find('<result>')+8:len(text)-9] # remove <result> tag
+print('extracted_text: ', extracted_text)
+if len(extracted_text)>10:
+    msg = msg + f"\n\n[추출된 Text]\n{extracted_text}\n"
+                
+memory_chain.chat_memory.add_user_message(f"{object}에서 텍스트를 추출하세요.")
+memory_chain.chat_memory.add_ai_message(extracted_text)
 ```
 
 ### RAG를 활용하기
