@@ -633,7 +633,7 @@ def extract_text(chat, img_base64):
         result = chat.invoke(messages)
         
         summary = result.content
-        print('result of code summarization: ', summary)
+        print('result of text extraction from an image: ', summary)
     except Exception:
         err_msg = traceback.format_exc()
         print('error message: ', err_msg)                    
