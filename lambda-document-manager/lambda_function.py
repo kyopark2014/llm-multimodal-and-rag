@@ -551,14 +551,14 @@ def extract_text(chat, img_base64):
     try: 
         result = chat.invoke(messages)
         
-        summary = result.content
-        print('result of code summarization: ', summary)
+        extracted_text = result.content
+        print('result of text extraction from an image: ', extracted_text)
     except Exception:
         err_msg = traceback.format_exc()
         print('error message: ', err_msg)                    
         raise Exception ("Not able to request to LLM")
     
-    return summary
+    return extracted_text
 
 def get_documentId(key, category):
     documentId = category + "-" + key
