@@ -632,14 +632,14 @@ def extract_text(chat, img_base64):
     try: 
         result = chat.invoke(messages)
         
-        summary = result.content
-        print('result of text extraction from an image: ', summary)
+        extracted_text = result.content
+        print('result of text extraction from an image: ', extracted_text)
     except Exception:
         err_msg = traceback.format_exc()
         print('error message: ', err_msg)                    
         raise Exception ("Not able to request to LLM")
     
-    return summary
+    return extracted_text
 
 # load documents from s3 
 def load_document(file_type, s3_file_name):
