@@ -122,7 +122,7 @@ def use_multimodal(chat, img_base64, query):
 
 이미지에서 텍스트를 추출하는 방법은 아래와 같습니다. 추출된 텍스트를 memory chain에 저장해 놓으면, 이후 추출된 텍스트를 베이스로 답변을 얻을 수 있습니다. 
 
-```
+```python
 text = extract_text(chat, img_base64)
 extracted_text = text[text.find('<result>')+8:len(text)-9] # remove <result> tag
 print('extracted_text: ', extracted_text)
