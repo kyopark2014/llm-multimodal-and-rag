@@ -341,16 +341,12 @@ def check_supported_type(key, file_type, size):
         print('html: ', key.find('/html/'))
         return False
     
-    if key[0]=='.' or key[key.rfind('/')+1]=='.':
-        print(f"Ignore {key} since the filename starts a dot character for macbook.")        
-        return False
-    elif size > 5000 and size<max_object_size and isSupported(file_type):
-        return True
-    
-    if size > 0 and (file_type == 'txt' or file_type == 'md' or file_type == 'py' or file_type == 'js'):
-        return True
-    elif size > 0 and (file_type == 'png' or file_type == 'jpeg' or file_type == 'jpg'):
-        return True
+    if isSupported(file_type):
+        if key[0]=='.' or key[key.rfind('/')+1]=='.':
+            print(f"Ignore {key} since the filename starts a dot character for macbook.")        
+            return False
+        elif size > 0 and size<max_object_size:
+            return True
     else:
         return False
 
