@@ -334,7 +334,8 @@ def summary_of_code(chat, code, mode):
 
 ### OpenSearch에 문서 등록하기
 
-파일이 S3에 저장될때 발생하는 putEvent를 받아서 OpenSearch에 문서를 저장합니다. 이때, 저장되는 index에 documentId를 조합합니다. 만약 기존에 동일한 문서가 업로드 되었다면 삭제후 등록을 수행합니다. 상세한 코드는 [lambda-document-manager](./lambda-document-manager/lambda_function.py)을 참조합니다. 
+파일이 S3에 저장될때 발생하는 putEvent를 받아서 OpenSearch에 문서를 저장합니다. 이때, 저장되는 index에 documentId를 조합합니다. 만약 기존에 동일한 문서가 업로드 되었다면 삭제후 등록을 수행합니다. 상세한 코드는 [lambda-document-manager]([./lambda-document-manager/lambda_function.py](https://github.com/kyopark2014/llm-multimodal-and-rag/blob/main/lambda-document-manager/lambda_function.py))을 참조합니다. 
+
 
 ```python
 def store_document_for_opensearch(bedrock_embeddings, docs, documentId):
