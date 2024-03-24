@@ -18,11 +18,12 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 const region = process.env.CDK_DEFAULT_REGION;    
+const accountId = process.env.CDK_DEFAULT_ACCOUNT
 const debug = false;
 const stage = 'dev';
 const s3_prefix = 'docs';
 const projectName = `llm-multimodal-and-rag`; 
-const bucketName = `storage-for-${projectName}-${region}`; 
+const bucketName = `storage-for-${projectName}-${accountId}-${region}`; 
 
 const opensearch_account = "admin";
 const opensearch_passwd = "Wifi1234!";
