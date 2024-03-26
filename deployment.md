@@ -46,7 +46,7 @@ git clone https://github.com/kyopark2014/llm-multimodal-and-rag
 cd llm-multimodal-and-rag/cdk-multimodal-and-rag/ && npm install
 ```
 
-6) CDK 사용을 위해 Boostraping을 수행합니다.
+6) CDK 사용을 위해 Bootraping을 수행합니다.
 
 아래 명령어로 Account ID를 확인합니다.
 
