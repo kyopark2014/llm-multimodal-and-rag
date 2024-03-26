@@ -218,6 +218,60 @@ def readStreamMsg(connectionId, requestId, stream):
     return msg
 ```
 
+### 대화 이력의 관리
+
+대화를 원활하게 하기 위해서는 대화이력의 관리가 필요합니다. Lambda와 같은 서비리스는 이벤트가 있을 경우에만 사용이 가능하므로 이벤트의 userId를 이용해 DynamoDB의 대화이력을 가져와서 대화에서 활용합니다.
+
+여기서는 map_chain으로 사용자별 대화이력을 저장하는 메모리를 관리합니다. 이벤트에서 userId를 추출해서 해당 대화이력이 있는 경우에는 재활용하고, 없는 경우에는 DynamoDB에서 읽어옵니다. 대화이력이 너무 긴 경우에 context의 크기에 영향을 줄 수 있으므로, [ConversationBufferWindowMemory](https://python.langchain.com/docs/modules/memory/types/buffer_window)에서 k를 이용해 관리되는 대화이력의 크기를 조정합니다. 새로운 대화는 add_user_message()와 add_ai_message()을 이용해 추가합니다. 
+
+```python
+map_chain = dict()
+
+if userId in map_chain:  
+    memory_chain = map_chain[userId]    
+else: 
+    memory_chain = ConversationBufferWindowMemory(memory_key="chat_history", output_key='answer', return_messages=True, k=10)
+    map_chain[userId] = memory_chain
+
+memory_chain.chat_memory.add_user_message(text)
+memory_chain.chat_memory.add_ai_message(msg)
+```
+
+대화이력을 context에서 사용할 때에는 아래와 같이 읽어옵니다.
+
+```python
+history = memory_chain.load_memory_variables({})["chat_history"]
+```
+
+DynamoDB에서 대화이력은 아래와 같이 읽어옵니다.
+```python
+def load_chat_history(userId, allowTime):
+    dynamodb_client = boto3.client('dynamodb')
+
+    response = dynamodb_client.query(
+        TableName=callLogTableName,
+        KeyConditionExpression='user_id = :userId AND request_time > :allowTime',
+        ExpressionAttributeValues={
+            ':userId': {'S': userId},
+            ':allowTime': {'S': allowTime}
+        }
+    )
+
+    for item in response['Items']:
+        text = item['body']['S']
+        msg = item['msg']['S']
+        type = item['type']['S']
+
+        if type == 'text':
+            memory_chain.chat_memory.add_user_message(text)
+            if len(msg) > MSG_LENGTH:
+                memory_chain.chat_memory.add_ai_message(msg[:MSG_LENGTH])                          
+            else:
+                memory_chain.chat_memory.add_ai_message(msg)
+```
+
+
+
 ### 번역하기
 
 입력된 text가 한국어인지 확인하여 chain.invoke()의 input/output 언어 타입을 변경할 수 있습니다. 번역된 결과만을 얻기 위하여 <result></result> tag를 활용하였고, 결과에서 해당 tag를 제거하여 번역된 문장만을 추출하였습니다. 상세한 코드는 [lambda-chat-ws](./lambda-chat-ws/lambda_function.py)을 참조합니다. 
