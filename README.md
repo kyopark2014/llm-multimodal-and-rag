@@ -537,11 +537,11 @@ if len(selected_relevant_docs)==0:  # google api
 
 ![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/90c50e9e-5a13-4529-83bf-f2d1d1d544b7)
 
-[flow-chart.png](./contents/flow-chart.png) 파일을 다운로드합니다.  
+[flow_chart.png](./contents/flow_chart.png) 파일을 다운로드합니다.  
 
-<img src="./contents/flow-chart.png" width="300">
+<img src="./contents/flow_chart.png" width="300">
 
-[flow-chart.png](./contents/flow-chart.png)을 업로드하면 아래와 같이 flow chart에 대한 설명을 확인할 수 있습니다.
+[flow_chart.png](./contents/flow_chart.png)을 업로드하면 아래와 같이 flow chart에 대한 설명을 확인할 수 있습니다.
 
 ![image](https://github.com/kyopark2014/llm-multimodal-and-rag/assets/52392004/992e3ac7-cfa5-453f-94d8-135180fcac97)
 
