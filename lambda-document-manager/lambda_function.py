@@ -105,7 +105,7 @@ def store_document_for_opensearch(docs, key):
     print('objectName: ', objectName)    
     metadata_key = meta_prefix+objectName+'.metadata.json'
     print('meta file name: ', metadata_key)    
-    delete_document_if_exist(key)
+    delete_document_if_exist(metadata_key)
     
     try:        
         response = vectorstore.add_documents(docs, bulk_size = 2000)
