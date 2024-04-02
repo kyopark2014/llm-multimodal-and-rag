@@ -690,7 +690,7 @@ def lambda_handler(event, context):
                 if len(docs)>0:
                     print('docs[0]: ', docs[0])
                                     
-                    store_document_for_opensearch(docs, documentId)
+                    store_document_for_opensearch(docs, key)
 
             else: # delete if the object is unsupported one for format or size
                 try:
