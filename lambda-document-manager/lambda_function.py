@@ -491,6 +491,39 @@ def get_documentId(key, category):
     documentId = documentId.lower() # change to lowercase
                 
     return documentId
+
+def create_metadata(bucket, key, meta_prefix, s3_prefix, uri, category, documentId, ids):
+    title = key
+    timestamp = int(time.time())
+
+    metadata = {
+        "Attributes": {
+            "_category": category,
+            "_source_uri": uri,
+            "_version": str(timestamp),
+            "_language_code": "ko"
+        },
+        "Title": title,
+        "DocumentId": documentId,      
+        "ids": ids  
+    }
+    print('metadata: ', metadata)
+    
+    #objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)]).upper()
+    objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+    print('objectName: ', objectName)
+
+    client = boto3.client('s3')
+    try: 
+        client.put_object(
+            Body=json.dumps(metadata), 
+            Bucket=bucket, 
+            Key=meta_prefix+objectName+'.metadata.json' 
+        )
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)        
+        raise Exception ("Not able to create meta file")
     
 # load csv documents from s3
 def lambda_handler(event, context):
@@ -583,6 +616,7 @@ def lambda_handler(event, context):
                 print('documentId: ', documentId)
                 
                 docs = []
+                ids = []
                         
                 if file_type == 'pdf' or file_type == 'txt' or file_type == 'md' or file_type == 'csv' or file_type == 'pptx' or file_type == 'docx':
                     print('upload to opensearch: ', key) 
@@ -685,12 +719,14 @@ def lambda_handler(event, context):
                                 }
                             )
                         )        
-                                                                                                         
+                                                                                                                           
                 print('docs size: ', len(docs))
                 if len(docs)>0:
                     print('docs[0]: ', docs[0])
                                     
-                    store_document_for_opensearch(docs, key)
+                    ids = store_document_for_opensearch(docs, key)
+                    
+                create_metadata(bucket=s3_bucket, key=key, meta_prefix=meta_prefix, s3_prefix=s3_prefix, uri=path+parse.quote(key), category=category, documentId=documentId, ids=ids)
 
             else: # delete if the object is unsupported one for format or size
                 try:
