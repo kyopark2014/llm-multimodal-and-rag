@@ -90,20 +90,24 @@ bedrock_embeddings = BedrockEmbeddings(
     model_id = 'amazon.titan-embed-text-v1' 
 )   
 
-def store_document_for_opensearch(bedrock_embeddings, docs, documentId):
-    index_name = get_index_name(documentId)
-    
-    delete_index_if_exist(index_name)
+index_name = 'idx-rag'
+vectorstore = OpenSearchVectorSearch(
+    index_name=index_name,  
+    is_aoss = False,
+    #engine="faiss",  # default: nmslib
+    embedding_function = bedrock_embeddings,
+    opensearch_url = opensearch_url,
+    http_auth=(opensearch_account, opensearch_passwd),
+)  
 
-    try:
-        vectorstore = OpenSearchVectorSearch(
-            index_name=index_name,  
-            is_aoss = False,
-            #engine="faiss",  # default: nmslib
-            embedding_function = bedrock_embeddings,
-            opensearch_url = opensearch_url,
-            http_auth=(opensearch_account, opensearch_passwd),
-        )
+def store_document_for_opensearch(docs, key):    
+    objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+    print('objectName: ', objectName)    
+    metadata_key = meta_prefix+objectName+'.metadata.json'
+    print('meta file name: ', metadata_key)    
+    delete_document_if_exist(key)
+    
+    try:        
         response = vectorstore.add_documents(docs, bulk_size = 2000)
         print('response of adding documents: ', response)
     except Exception:
@@ -113,113 +117,33 @@ def store_document_for_opensearch(bedrock_embeddings, docs, documentId):
 
     print('uploaded into opensearch')
     
-def store_document_for_opensearch_with_nori(bedrock_embeddings, docs, documentId):
-    index_name = get_index_name(documentId)
+    return response
     
-    delete_index_if_exist(index_name)
-    
-    index_body = {
-        'settings': {
-            'analysis': {
-                'analyzer': {
-                    'my_analyzer': {
-                        'char_filter': ['html_strip'], 
-                        'tokenizer': 'nori',
-                        'filter': ['nori_number','lowercase','trim','my_nori_part_of_speech'],
-                        'type': 'custom'
-                    }
-                },
-                'tokenizer': {
-                    'nori': {
-                        'decompound_mode': 'mixed',
-                        'discard_punctuation': 'true',
-                        'type': 'nori_tokenizer'
-                    }
-                },
-                "filter": {
-                    "my_nori_part_of_speech": {
-                        "type": "nori_part_of_speech",
-                        "stoptags": [
-                                "E", "IC", "J", "MAG", "MAJ",
-                                "MM", "SP", "SSC", "SSO", "SC",
-                                "SE", "XPN", "XSA", "XSN", "XSV",
-                                "UNA", "NA", "VSV"
-                        ]
-                    }
-                }
-            },
-            'index': {
-                'knn': True,
-                'knn.space_type': 'cosinesimil'  # Example space type
-            }
-        },
-        'mappings': {
-            'properties': {
-                'metadata': {
-                    'properties': {
-                        'source' : {'type': 'keyword'},                    
-                        'last_updated': {'type': 'date'},
-                        'project': {'type': 'keyword'},
-                        'seq_num': {'type': 'long'},
-                        'title': {'type': 'text'},  # For full-text search
-                        'url': {'type': 'text'},  # For full-text search
-                    }
-                },            
-                'text': {
-                    'analyzer': 'my_analyzer',
-                    'search_analyzer': 'my_analyzer',
-                    'type': 'text'
-                },
-                'vector_field': {
-                    'type': 'knn_vector',
-                    'dimension': 1536  # Replace with your vector dimension
-                }
-            }
-        }
-    }
-    
-    try: # create index
-        response = os_client.indices.create(
-            index_name,
-            body=index_body
-        )
-        print('index was created with nori plugin:', response)
+def delete_document_if_exist(metadata_key):
+    try: 
+        s3r = boto3.resource("s3")
+        bucket = s3r.Bucket(s3_bucket)
+        objs = list(bucket.objects.filter(Prefix=metadata_key))
+        print('objs: ', objs)
+        
+        if(len(objs)>0):
+            doc = s3r.Object(s3_bucket, metadata_key)
+            meta = doc.get()['Body'].read().decode('utf-8')
+            print('meta: ', meta)
+            
+            ids = json.loads(meta)['ids']
+            print('ids: ', ids)
+            
+            result = vectorstore.delete(ids)
+            print('result: ', result)        
+        else:
+            print('no meta file: ', metadata_key)
+            
     except Exception:
         err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                
-        #raise Exception ("Not able to create the index")
-
-    try: # put the doucment
-        vectorstore = OpenSearchVectorSearch(
-            index_name=index_name,  
-            is_aoss = False,
-            #engine="faiss",  # default: nmslib
-            embedding_function = bedrock_embeddings,
-            opensearch_url = opensearch_url,
-            http_auth=(opensearch_account, opensearch_passwd),
-        )
-        response = vectorstore.add_documents(docs, bulk_size = 2000)
-        print('response of adding documents: ', response)
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                
-        #raise Exception ("Not able to request to LLM")
-
-    print('uploaded into opensearch')    
- 
-def get_index_name(documentId):
-    index_name = "idx-"+documentId
-    # print('index_name: ', index_name)
-                        
-    print('index_name: ', index_name)
-    print('length of index_name: ', len(index_name))
-                            
-    if len(index_name)>=100: # reduce index size
-        index_name = 'idx-'+index_name[len(index_name)-100:]
-        print('modified index_name: ', index_name)
-    
-    return index_name
- 
+        print('error message: ', err_msg)        
+        raise Exception ("Not able to create meta file")
+             
 # load documents from s3 for pdf and txt
 def load_document(file_type, key):
     s3r = boto3.resource("s3")
@@ -618,14 +542,12 @@ def lambda_handler(event, context):
                     
                 if documentId:
                     try: # delete metadata                        
+                        delete_document_if_exist(metadata_key)
+                        
                         print('delete metadata: ', metadata_key)                        
                         result = s3.delete_object(Bucket=bucket, Key=metadata_key)
                         # print('result of metadata deletion: ', result)
                         
-                        # delete document index of opensearch
-                        index_name = get_index_name(documentId)
-                                                
-                        delete_index_if_exist(index_name)                    
                     except Exception:
                         err_msg = traceback.format_exc()
                         print('err_msg: ', err_msg)
@@ -768,7 +690,7 @@ def lambda_handler(event, context):
                 if len(docs)>0:
                     print('docs[0]: ', docs[0])
                                     
-                    store_document_for_opensearch(bedrock_embeddings, docs, documentId)
+                    store_document_for_opensearch(docs, documentId)
 
             else: # delete if the object is unsupported one for format or size
                 try:
