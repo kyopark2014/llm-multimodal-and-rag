@@ -390,31 +390,80 @@ def summary_of_code(chat, code, mode):
 
 파일이 S3에 저장될때 발생하는 putEvent를 받아서 OpenSearch에 문서를 저장합니다. 이때, 저장되는 index에 documentId를 조합합니다. 만약 기존에 동일한 문서가 업로드 되었다면 삭제후 등록을 수행합니다. 상세한 코드는 [lambda-document-manager](https://github.com/kyopark2014/llm-multimodal-and-rag/blob/main/lambda-document-manager/lambda_function.py)을 참조합니다. 
 
+1) LangChan의 OpenSearchVectorSearch를 이용해 vectorestore를 정의합니다.
 
 ```python
-def store_document_for_opensearch(bedrock_embeddings, docs, documentId):
-    index_name = get_index_name(documentId)
-    
-    delete_index_if_exist(index_name)
-
-        vectorstore = OpenSearchVectorSearch(
-            index_name=index_name,  
-            is_aoss = False,
-            #engine="faiss",  # default: nmslib
-            embedding_function = bedrock_embeddings,
-            opensearch_url = opensearch_url,
-            http_auth=(opensearch_account, opensearch_passwd),
-        )
-        response = vectorstore.add_documents(docs, bulk_size = 2000)
-
-def get_index_name(documentId):
-    index_name = "idx-"+documentId
-                                                    
-    if len(index_name)>=100: # reduce index size
-        index_name = 'idx-'+index_name[len(index_name)-100:]
-    
-    return index_name
+index_name = 'idx-rag'
+vectorstore = OpenSearchVectorSearch(
+    index_name=index_name, 
+    is_aoss = False,
+    #engine="faiss",  # default: nmslib
+    embedding_function = bedrock_embeddings,
+    opensearch_url = opensearch_url,
+    http_auth=(opensearch_account, opensearch_passwd),
+) 
 ```
+
+2) add_documents를 이용해 문서들(docs)를 등록하면 return값으로 document id들(ids)를 받습니다.
+
+```python
+response = vectorstore.add_documents(docs, bulk_size = 2000)
+print('response of adding documents: ', response)
+```
+
+3) S3에 파일을 업로드할때 metafile을 생성(json 포맷)하고 여기에 아래와 같이 documents들을 저장합니다.
+
+```python
+def create_metadata(bucket, key, meta_prefix, s3_prefix, uri, category, documentId, ids):
+    title = key
+    timestamp = int(time.time())
+ 
+    metadata = {
+        "Attributes": {
+            "_category": category,
+            "_source_uri": uri,
+            "_version": str(timestamp),
+            "_language_code": "ko"
+        },
+        "Title": title,
+        "DocumentId": documentId,     
+        "ids": ids 
+    }
+   
+    objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+    client = boto3.client('s3')
+    try:
+        client.put_object(
+            Body=json.dumps(metadata),
+            Bucket=bucket,
+            Key=meta_prefix+objectName+'.metadata.json'
+        )
+    except Exception:
+        err_msg = traceback.format_exc()
+        raise Exception ("Not able to create meta file")
+```
+
+4) 파일이 새로 들어올때마다 metafile이 있는지 확인후 있다면 이전 파일을 등록할때 생성된 document id들을 삭제후 새로 등록합니다. 업데이트를 위해 기존 문서를 지울때에는 langchain의 delete 함수를 사용합니다.
+
+```python
+def delete_document_if_exist(metadata_key):
+    try:
+        s3r = boto3.resource("s3")
+        bucket = s3r.Bucket(s3_bucket)
+        objs = list(bucket.objects.filter(Prefix=metadata_key))
+       
+        if(len(objs)>0):
+            doc = s3r.Object(s3_bucket, metadata_key)
+            meta = doc.get()['Body'].read().decode('utf-8')
+            ids = json.loads(meta)['ids']
+           
+            result = vectorstore.delete(ids)
+           
+    except Exception:
+        err_msg = traceback.format_exc()
+        raise Exception ("Not able to create meta file")
+```
+
 
 ### Google Search API 활용
 
