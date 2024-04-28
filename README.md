@@ -1,6 +1,6 @@
 # LangChain으로 Multimodal과 RAG 활용하기
 
-LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 [LangChain](https://www.langchain.com/)을 이용하면 쉽고 빠르게 개발할 수 있습니다. 여기에서는 LangChain으로 Multimodal을 활용하고 RAG를 구현할 뿐아니라, Prompt engineering을 활용하여, 번역하기, 문법 오류고치기, 코드 요약하기를 구현합니다. Multimodel을 지원하는 [Anthropic Claude3](https://aws.amazon.com/ko/blogs/machine-learning/unlocking-innovation-aws-and-anthropic-push-the-boundaries-of-generative-ai-together/)는 이전 모델에서 사용하던 [LangChain Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 사용할 수 없고, [LangChain BedrockChat](https://python.langchain.com/docs/integrations/chat/bedrock)을 이용하여야 합니다. BedrockChat은 LangChain의 [chat model component](https://python.langchain.com/docs/integrations/chat/)을 지원하며, Anthropic의 Claude 모델뿐 아니라 AI21 Labs, Cohere, Meta, Stability AI, Amazon Titan을 모두 지원합니다. 
+LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 [LangChain](https://www.langchain.com/)을 이용하면 쉽고 빠르게 개발할 수 있습니다. 여기에서는 LangChain으로 Multimodal을 활용하고 RAG를 구현할 뿐아니라, Prompt engineering을 활용하여, 번역하기, 문법 오류고치기, 코드 요약하기를 구현합니다. Multimodel을 지원하는 [Anthropic Claude3](https://aws.amazon.com/ko/blogs/machine-learning/unlocking-innovation-aws-and-anthropic-push-the-boundaries-of-generative-ai-together/)는 이전 모델에서 사용하던 [LangChain Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)을 사용할 수 없고, [LangChain ChatBedrock](https://python.langchain.com/docs/integrations/chat/bedrock/)을 이용하여야 합니다. ChatBedrock은 LangChain의 [chat model component](https://python.langchain.com/docs/integrations/chat/)을 지원하며, Anthropic의 Claude 모델뿐 아니라 AI21 Labs, Cohere, Meta, Stability AI, Amazon Titan을 모두 지원합니다. 
 
 ## Architecture 개요
 
@@ -19,13 +19,13 @@ LLM (Large Language Models)을 이용한 어플리케이션을 개발할 때에 
 
 ## 주요 시스템 구성
 
-### LangChain의 BedrockChat
+### LangChain의 ChatBedrock
 
-Claude3부터는 BedrockChat을 이용하여야 합니다. 이때, [LangChain Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)의 max_tokens_to_sample이 BedrockChat에서는 max_tokens로 변경되었습니다. 상세한 코드는 [lambda-chat-ws](./lambda-chat-ws/lambda_function.py)을 참조합니다. 
+Claude3부터는 ChatBedrock을 이용하여야 합니다. 이때, [LangChain Bedrock](https://python.langchain.com/docs/integrations/llms/bedrock)의 max_tokens_to_sample이 ChatBedrock에서는 max_tokens로 변경되었습니다. 상세한 코드는 [lambda-chat-ws](./lambda-chat-ws/lambda_function.py)을 참조합니다. 
 
 ```python
 import boto3
-from langchain_community.chat_models import BedrockChat
+from langchain_aws import ChatBedrock
 
 boto3_bedrock = boto3.client(
     service_name = 'bedrock-runtime',
@@ -46,18 +46,16 @@ parameters = {
     "stop_sequences": [HUMAN_PROMPT]
 }
 
-chat = BedrockChat(
-    model_id = modelId,
-    client = boto3_bedrock,
-    streaming = True,
-    callbacks = [StreamingStdOutCallbackHandler()],
-    model_kwargs = parameters,
-)
+chat = ChatBedrock(   
+    model_id=modelId,
+    client=boto3_bedrock, 
+    model_kwargs=parameters,
+)  
 ```
 
 ### Multimodal 활용
 
-Claude3은 Multimodal을 지원하므로 이미지에 대한 분석을 할 수 있습니다. LangChain의 BedrockChat을 이용하여 Multimodel을 활용합니다. 이후 아래와 같이 Base64로 된 이미지를 이용해 query를 수행하면 이미지에 대한 설명을 얻을 수 있습니다. Sonnet에서 처리할 수 있는 이미지의 크기 제한으로 resize를 수행하여야 합니다. 
+Claude3은 Multimodal을 지원하므로 이미지에 대한 분석을 할 수 있습니다. LangChain의 ChatBedrock을 이용하여 Multimodel을 활용합니다. 이후 아래와 같이 Base64로 된 이미지를 이용해 query를 수행하면 이미지에 대한 설명을 얻을 수 있습니다. Sonnet에서 처리할 수 있는 이미지의 크기 제한으로 resize를 수행하여야 합니다. 
 
 ```python
 if file_type == 'png' or file_type == 'jpeg' or file_type == 'jpg':
@@ -640,7 +638,7 @@ cd ~/environment/llm-multimodal-and-rag/cdk-multimodal-and-rag/ && cdk destroy -
 
 ## 결론
 
-LangChain을 이용하여 Anthropic Claude3.0으로 Multimodal과 RAG를 구현하였습니다. LangChain의 BedrockChat을 활용하였고, Chain을 이용하여 Prompt를 구성하는 방법에 대해 설명하였습니다. 또한 OpenSearch를 이용하여 RAG를 구성하고 대규모로 문서를 처리하기 위한 event driven architecture에 대해 설명하였습니다. 
+LangChain을 이용하여 Anthropic Claude3.0으로 Multimodal과 RAG를 구현하였습니다. LangChain의 ChatBedrock을 활용하였고, Chain을 이용하여 Prompt를 구성하는 방법에 대해 설명하였습니다. 또한 OpenSearch를 이용하여 RAG를 구성하고 대규모로 문서를 처리하기 위한 event driven architecture에 대해 설명하였습니다. 
 
 
 ## 참고사항
