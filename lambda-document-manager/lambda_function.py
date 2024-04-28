@@ -23,6 +23,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.chat_models import BedrockChat
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_aws import ChatBedrock
 
 s3 = boto3.client('s3')
 
@@ -320,13 +321,11 @@ def get_chat(profile_of_LLMs, selected_LLM):
     }
     # print('parameters: ', parameters)
 
-    chat = BedrockChat(
+    chat = ChatBedrock(   
         model_id=modelId,
         client=boto3_bedrock, 
-        streaming=True,
-        callbacks=[StreamingStdOutCallbackHandler()],
         model_kwargs=parameters,
-    )        
+    )           
     
     return chat
 
