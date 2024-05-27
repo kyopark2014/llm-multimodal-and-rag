@@ -582,7 +582,7 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
     const googleApiSecret = new secretsmanager.Secret(this, `google-api-secret-for-${projectName}`, {
       description: 'secret for google api key',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      secretName: 'googl_api_key',
+      secretName: `googl_api_key-${projectName}`,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ 
           google_cse_id: 'cse_id'
@@ -597,13 +597,10 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
     const weatherApiSecret = new secretsmanager.Secret(this, `weather-api-secret-for-${projectName}`, {
       description: 'secret for weather api key', // openweathermap
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      secretName: 'openweathermap',
-      generateSecretString: {
-        secretStringTemplate: JSON.stringify({ 
-          api_name: 'weather'
-        }),
-        generateStringKey: 'api_key',
-        excludeCharacters: '/@"',
+      secretName: `openweathermap-${projectName}`,
+      secretObjectValue: {
+        project_name: cdk.SecretValue.unsafePlainText(projectName),
+        weather_api_key: cdk.SecretValue.unsafePlainText(''),
       },
     });
     weatherApiSecret.grantRead(roleLambdaWebsocket) 
@@ -611,7 +608,7 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
     const langsmithApiSecret = new secretsmanager.Secret(this, `weather-langsmith-secret-for-${projectName}`, {
       description: 'secret for lamgsmith api key', // openweathermap
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      secretName: 'langsmithapikey',
+      secretName: `langsmithapikey-${projectName}`,
       secretObjectValue: {
         langchain_project: cdk.SecretValue.unsafePlainText(projectName),
         langsmith_api_key: cdk.SecretValue.unsafePlainText(''),
@@ -622,7 +619,7 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
     const tavilyApiSecret = new secretsmanager.Secret(this, `weather-tavily-secret-for-${projectName}`, {
       description: 'secret for lamgsmith api key', // openweathermap
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      secretName: 'tavilyapikey',
+      secretName: `tavilyapikey-${projectName}`,
       secretObjectValue: {
         project_name: cdk.SecretValue.unsafePlainText(projectName),
         tavily_api_key: cdk.SecretValue.unsafePlainText(''),
@@ -660,6 +657,7 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
         claude2: JSON.stringify(claude2),
         claude_instant: JSON.stringify(claude_instant),
         googleApiSecret: googleApiSecret.secretName,
+        projectName: projectName
       }
     });     
     lambdaChatWebsocket.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));  

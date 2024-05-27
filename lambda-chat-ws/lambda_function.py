@@ -64,6 +64,7 @@ history_length = 0
 token_counter_history = 0
 
 minDocSimilarity = 200
+projectName = os.environ.get('projectName')
 
 # google search api
 googleApiSecret = os.environ.get('googleApiSecret')
@@ -85,12 +86,12 @@ except Exception as e:
 # api key to get weather information in agent
 try:
     get_weather_api_secret = secretsmanager.get_secret_value(
-        SecretId='openweathermap'
+        SecretId=f"openweathermap-{projectName}"
     )
     #print('get_weather_api_secret: ', get_weather_api_secret)
     secret = json.loads(get_weather_api_secret['SecretString'])
     #print('secret: ', secret)
-    weather_api_key = secret['api_key']
+    weather_api_key = secret['weather_api_key']
 
 except Exception as e:
     raise e
@@ -99,7 +100,7 @@ except Exception as e:
 langsmith_api_key = ""
 try:
     get_langsmith_api_secret = secretsmanager.get_secret_value(
-        SecretId='langsmithapikey'
+        SecretId=f"langsmithapikey-{projectName}"
     )
     #print('get_langsmith_api_secret: ', get_langsmith_api_secret)
     secret = json.loads(get_langsmith_api_secret['SecretString'])
@@ -118,7 +119,7 @@ if langsmith_api_key:
 tavily_api_key = ""
 try:
     get_tavily_api_secret = secretsmanager.get_secret_value(
-        SecretId='tavilyapikey'
+        SecretId=f"tavilyapikey-{projectName}"
     )
     #print('get_tavily_api_secret: ', get_tavily_api_secret)
     secret = json.loads(get_tavily_api_secret['SecretString'])
@@ -1243,35 +1244,35 @@ def get_weather_info(city: str) -> str:
         
     print('place: ', place)
     
-    apiKey = weather_api_key
-    lang = 'en' 
-    units = 'metric' 
-    api = f"https://api.openweathermap.org/data/2.5/weather?q={place}&APPID={apiKey}&lang={lang}&units={units}"
-    # print('api: ', api)
-    
     weather_str: str = f"{city}에 대한 날씨 정보가 없습니다."
-            
-    try:
-        result = requests.get(api)
-        result = json.loads(result.text)
-        print('result: ', result)
-    
-        if 'weather' in result:
-            overall = result['weather'][0]['main']
-            current_temp = result['main']['temp']
-            min_temp = result['main']['temp_min']
-            max_temp = result['main']['temp_max']
-            humidity = result['main']['humidity']
-            wind_speed = result['wind']['speed']
-            cloud = result['clouds']['all']
-            
-            weather_str = f"{city}의 현재 날씨의 특징은 {overall}이며, 현재 온도는 {current_temp}도 이고, 최저온도는 {min_temp}도, 최고 온도는 {max_temp}도 입니다. 현재 습도는 {humidity}% 이고, 바람은 초당 {wind_speed} 미터 입니다. 구름은 {cloud}% 입니다."
-            #weather_str = f"Today, the overall of {city} is {overall}, current temperature is {current_temp} degree, min temperature is {min_temp} degree, highest temperature is {max_temp} degree. huminity is {humidity}%, wind status is {wind_speed} meter per second. the amount of cloud is {cloud}%."            
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                    
-        # raise Exception ("Not able to request to LLM")    
-    
+    if weather_api_key: 
+        apiKey = weather_api_key
+        lang = 'en' 
+        units = 'metric' 
+        api = f"https://api.openweathermap.org/data/2.5/weather?q={place}&APPID={apiKey}&lang={lang}&units={units}"
+        # print('api: ', api)
+                
+        try:
+            result = requests.get(api)
+            result = json.loads(result.text)
+            print('result: ', result)
+        
+            if 'weather' in result:
+                overall = result['weather'][0]['main']
+                current_temp = result['main']['temp']
+                min_temp = result['main']['temp_min']
+                max_temp = result['main']['temp_max']
+                humidity = result['main']['humidity']
+                wind_speed = result['wind']['speed']
+                cloud = result['clouds']['all']
+                
+                weather_str = f"{city}의 현재 날씨의 특징은 {overall}이며, 현재 온도는 {current_temp}도 이고, 최저온도는 {min_temp}도, 최고 온도는 {max_temp}도 입니다. 현재 습도는 {humidity}% 이고, 바람은 초당 {wind_speed} 미터 입니다. 구름은 {cloud}% 입니다."
+                #weather_str = f"Today, the overall of {city} is {overall}, current temperature is {current_temp} degree, min temperature is {min_temp} degree, highest temperature is {max_temp} degree. huminity is {humidity}%, wind status is {wind_speed} meter per second. the amount of cloud is {cloud}%."            
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)                    
+            # raise Exception ("Not able to request to LLM")    
+        
     print('weather_str: ', weather_str)                            
     return weather_str
 
