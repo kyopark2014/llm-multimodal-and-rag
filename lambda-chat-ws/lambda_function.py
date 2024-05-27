@@ -1330,7 +1330,7 @@ def search_by_opensearch(keyword: str) -> str:
     ) 
     
     answer = ""
-    top_k = 3    
+    top_k = 2    
     relevant_documents = vectorstore_opensearch.similarity_search_with_score(
         query = keyword,
         k = top_k,
