@@ -88,9 +88,17 @@ function sendMessage(message) {
 }
 
 let tm;
+let chromeTimer = 300;
 function ping() {
     console.log('->ping');
     webSocket.send('__ping__');
+
+    chromeTimer = chromeTimer - 50;  
+    if(chromeTimer<60) {  // in order prevent session close by the chrome timer, 5min.
+        chromeTimer = 300;
+        window.location.href = "chat.html";  // refresh browser per 4min
+    }
+
     tm = setTimeout(function () {
         console.log('reconnect...');    
         
@@ -175,7 +183,7 @@ function connect(endpoint, type) {
                     console.log('error: ', response.msg);
 
                     if(response.msg.indexOf('throttlingException') || response.msg.indexOf('Too many requests') || response.msg.indexOf('too many requests')) {
-                        addNotifyMessage('허용된 요청수를 초과하였습니다. 추후 다시 재시도 해주세요.');  
+                        addNotifyMessage('허용된 요청수를 초과하였습니다. 추후 다시 재도시도 해주세요.');  
                     }
                     else {
                         addNotifyMessage(response.msg);
@@ -240,7 +248,6 @@ for (i=0;i<maxMsgItems;i++) {
 calleeName.textContent = "Chatbot";  
 calleeId.textContent = "AWS";
 
-
 if(langstate=='korean') {
     addNotifyMessage("Amazon Bedrock을 이용하여 채팅을 시작합니다.");
     addReceivedMessage(uuidv4(), "Amazon Bedrock을 이용하여 주셔서 감사합니다. 편안한 대화를 즐기실수 있으며, 파일을 업로드하면 요약을 할 수 있습니다.")
@@ -300,47 +307,29 @@ function onSend(e) {
         let requestId = uuidv4();
         addSentMessage(requestId, timestr, message.value);
         
-        if(conversationType=='qa-all') {
-            type = "text",
-            conv_type = 'qa',
-            rag_type = 'all',
-            function_type = 'rag'
-        }
-        else if(conversationType=='qa-kendra') {
-            type = "text",
-            conv_type = 'qa',
-            rag_type = 'kendra',
-            function_type = 'rag'
-        }
-        else if(conversationType=='qa-opensearch') {
+        if(conversationType=='qa-opensearch') {
             type = "text",
             conv_type = 'qa',
             rag_type = 'opensearch',
             function_type = 'rag'
         }
-        else if(conversationType=='qa-faiss') {
+        else if(conversationType=='normal-claude3') {
             type = "text",
-            conv_type = 'qa',
-            rag_type = 'faiss',
-            function_type = 'rag'
+            conv_type = 'normal',
+            rag_type = '',
+            function_type = 'normal-claude3'
         }
-        else if(conversationType=='dual-search') {
+        else if(conversationType=='normal-claude2') {
             type = "text",
-            conv_type = 'qa',
-            rag_type = 'all',
-            function_type = 'dual-search'
+            conv_type = 'normal',
+            rag_type = '',
+            function_type = 'normal-claude2'
         }
-        else if(conversationType=='code-generation-python') {
-            type = "code",
-            conv_type = 'qa',
-            rag_type = 'opensearch',
-            function_type = 'code-generation-python'
-        }
-        else if(conversationType=='code-generation-nodejs') {
-            type = "code",
-            conv_type = 'qa',
-            rag_type = 'opensearch',
-            function_type = 'code-generation-nodejs'
+        else if(conversationType=='normal-claude_instant') {
+            type = "text",
+            conv_type = 'normal',
+            rag_type = '',
+            function_type = 'normal-claude_instant'
         }
         else {
             type = "text",
@@ -392,24 +381,26 @@ function getTime(current) {
 }
 
 function addSentMessage(requestId, timestr, text) {
-    idx = index;
+    let idx = index;
+
     if(!indexList.get(requestId+':send')) {
-        indexList.put(requestId+':send', index);           
-        index++;  
+        indexList.put(requestId+':send', idx);
+
+        index++;
     }
     else {
         idx = indexList.get(requestId+':send');
-        console.log("reused index="+index+', id='+requestId+':send');        
+        // console.log("reused index="+idx+', id='+requestId+':send');        
     }
-    console.log("idx:", idx);   
+    // console.log("index (sendMessage):", idx);   
 
-    var length = text.length;    
-    console.log('length: ', length);
+    let length = text.length;    
+    // console.log('length: ', length);
     if(length < 10) {
         msglist[idx].innerHTML = 
             `<div class="chat-sender20 chat-sender--right"><h1>${timestr}</h1>${text}&nbsp;<h2 id="status${idx}"></h2></div>`;   
     }
-    else if(length < 13) {
+    else if(length < 14) {
         msglist[idx].innerHTML = 
             `<div class="chat-sender25 chat-sender--right"><h1>${timestr}</h1>${text}&nbsp;<h2 id="status${idx}"></h2></div>`;   
     }
@@ -448,54 +439,56 @@ function addSentMessage(requestId, timestr, text) {
 function addSentMessageForSummary(requestId, timestr, text) {  
     console.log("sent message: "+text);
 
-    idx = index;
     if(!indexList.get(requestId+':send')) {
-        indexList.put(requestId+':send', index);       
-        index++;      
+        indexList.put(requestId+':send', index);             
     }
     else {
-        idx = indexList.get(requestId+':send');
+        index = indexList.get(requestId+':send');
         console.log("reused index="+index+', id='+requestId+':send');        
     }
     console.log("index:", index);   
 
     let length = text.length;
     if(length < 100) {
-        msglist[idx].innerHTML = 
-            `<div class="chat-sender60 chat-sender--right"><h1>${timestr}</h1>${text}&nbsp;<h2 id="status${idx}"></h2></div>`;   
+        msglist[index].innerHTML = 
+            `<div class="chat-sender60 chat-sender--right"><h1>${timestr}</h1>${text}&nbsp;<h2 id="status${index}"></h2></div>`;   
     }
     else {
-        msglist[idx].innerHTML = 
-            `<div class="chat-sender80 chat-sender--right"><h1>${timestr}</h1>${text}&nbsp;<h2 id="status${idx}"></h2></div>`;
+        msglist[index].innerHTML = 
+            `<div class="chat-sender80 chat-sender--right"><h1>${timestr}</h1>${text}&nbsp;<h2 id="status${index}"></h2></div>`;
     }   
 
     chatPanel.scrollTop = chatPanel.scrollHeight;  // scroll needs to move bottom
+    index++;
 }  
 
 function addReceivedMessage(requestId, msg) {
     // console.log("add received message: "+msg);
     sender = "Chatbot"
-    
-    idx = index;
+
+    let idx = index;
+
+    // console.log("add received message: "+msg);
     if(!indexList.get(requestId+':receive')) {
-        indexList.put(requestId+':receive', index);         
-        index++;    
+        indexList.put(requestId+':receive', idx);
+        index++;
     }
     else {
         idx = indexList.get(requestId+':receive');
-        // console.log("reused index="+index+', id='+requestId+':receive');        
+        // console.log("reused index="+idx+', id='+requestId+':receive');        
     }
-    // console.log("index:", index);   
+    // console.log("index (receiveMessage):", idx);   
 
     msg = msg.replaceAll("\n", "<br/>");
 
-    let length = msg.length;
+    var length = msg.length;
+    // console.log('msg: ', msg)
     // console.log("length: ", length);
 
     if(length < 10) {
         msglist[idx].innerHTML = `<div class="chat-receiver20 chat-receiver--left"><h1>${sender}</h1>${msg}&nbsp;</div>`;  
     }
-    else if(length < 13) {
+    else if(length < 14) {
         msglist[idx].innerHTML = `<div class="chat-receiver25 chat-receiver--left"><h1>${sender}</h1>${msg}&nbsp;</div>`;  
     }
     else if(length < 17) {
@@ -519,8 +512,8 @@ function addReceivedMessage(requestId, msg) {
     else {
         msglist[idx].innerHTML = `<div class="chat-receiver80 chat-receiver--left"><h1>${sender}</h1>${msg}&nbsp;</div>`;  
     }
-     
-    chatPanel.scrollTop = chatPanel.scrollHeight;  // scroll needs to move bottom
+
+    chatPanel.scrollTop = chatPanel.scrollHeight;  // scroll needs to move bottom    
 }
 
 function addNotifyMessage(msg) {
@@ -534,6 +527,34 @@ function addNotifyMessage(msg) {
     chatPanel.scrollTop = chatPanel.scrollHeight;  // scroll needs to move bottom
 }
 
+function updateChatHistory() {
+    /* for(let i=0;i<maxMsgItems;i++) {
+        msglist[i].innerHTML = `<div></div>`
+    }
+    
+    msglist = [];
+    index = 0;
+
+    indexList = new HashMap();
+
+    for (i=0;i<maxMsgItems;i++) {
+        msglist.push(document.getElementById('msgLog'+i));
+    
+        // add listener        
+        (function(index) {
+            msglist[index].addEventListener("click", function() {
+                if(msglist.length < maxMsgItems) i = index;
+                else i = index + maxMsgItems;
+    
+                console.log('click! index: '+index);
+            })
+        })(i);
+    } 
+
+    getHistory(userId, 'update');    */ 
+    window.location.href = "chat.html";
+}
+
 refreshChatWindow.addEventListener('click', function(){
     console.log('update chat window');
     // updateChatWindow(callee);
@@ -545,7 +566,7 @@ attachFile.addEventListener('click', function(){
     let input = $(document.createElement('input')); 
     input.attr("type", "file");
     input.trigger('click');    
-    
+
     $(document).ready(function() {
         input.change(function(evt) {
             var input = this;
@@ -611,7 +632,7 @@ attachFile.addEventListener('click', function(){
             else {
                 addSentMessageForSummary(requestId, timestr, "uploading the selected file in order to summerize...");
             }
-
+            
             const uri = "upload";
             const xhr = new XMLHttpRequest();
         
