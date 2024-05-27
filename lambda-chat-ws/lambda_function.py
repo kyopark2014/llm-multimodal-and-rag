@@ -1245,8 +1245,8 @@ def get_weather_info(city: str) -> str:
     print('place: ', place)
     
     weather_str: str = f"{city}에 대한 날씨 정보가 없습니다."
-    if tavily_api_key: 
-        apiKey = tavily_api_key
+    if weather_api_key: 
+        apiKey = weather_api_key
         lang = 'en' 
         units = 'metric' 
         api = f"https://api.openweathermap.org/data/2.5/weather?q={place}&APPID={apiKey}&lang={lang}&units={units}"
@@ -1284,20 +1284,21 @@ def search_by_tavily(keyword: str) -> str:
     return: the information of keyword
     """    
     
-    keyword = keyword.replace('\'','')
-    
-    search = TavilySearchResults(k=5)
-                
     answer = ""
-    output = search.invoke(keyword)
-    print('tavily output: ', output)
-    
-    for result in output[:5]:
-        content = result.get("content")
-        url = result.get("url")
+    if tavily_api_key:
+        keyword = keyword.replace('\'','')
         
-        answer = answer + f"{content}, URL: {url}\n\n"
-    
+        search = TavilySearchResults(k=5)
+        
+        output = search.invoke(keyword)
+        print('tavily output: ', output)
+        
+        for result in output[:5]:
+            content = result.get("content")
+            url = result.get("url")
+            
+            answer = answer + f"{content}, URL: {url}\n\n"
+        
     return answer
 
 @tool    
