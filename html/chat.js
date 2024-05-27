@@ -93,11 +93,11 @@ function ping() {
     console.log('->ping');
     webSocket.send('__ping__');
 
-    chromeTimer = chromeTimer - 50;  
+    /* chromeTimer = chromeTimer - 50;  
     if(chromeTimer<60) {  // in order prevent session close by the chrome timer, 5min.
         chromeTimer = 300;
         window.location.href = "chat.html";  // refresh browser per 4min
-    }
+    } */
 
     tm = setTimeout(function () {
         console.log('reconnect...');    
