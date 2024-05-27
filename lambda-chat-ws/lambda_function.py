@@ -8,6 +8,8 @@ import csv
 import traceback
 import re
 import base64
+import requests
+
 from io import BytesIO
 from urllib import parse
 from botocore.config import Config
@@ -27,6 +29,13 @@ from googleapiclient.discovery import build
 from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_aws import ChatBedrock
+from langchain_core.prompts import PromptTemplate
+
+from langchain.agents import tool
+from langchain.agents import AgentExecutor, create_react_agent
+from bs4 import BeautifulSoup
+from pytz import timezone
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -41,6 +50,8 @@ opensearch_url = os.environ.get('opensearch_url')
 path = os.environ.get('path')
 doc_prefix = s3_prefix+'/'
 speech_prefix = 'speech/'
+LLM_for_embedding = json.loads(os.environ.get('LLM_for_embedding'))
+selected_embedding = 0
 
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
 roleArn = os.environ.get('roleArn')
@@ -71,6 +82,54 @@ try:
 except Exception as e:
     raise e
 
+# api key to get weather information in agent
+try:
+    get_weather_api_secret = secretsmanager.get_secret_value(
+        SecretId='openweathermap'
+    )
+    #print('get_weather_api_secret: ', get_weather_api_secret)
+    secret = json.loads(get_weather_api_secret['SecretString'])
+    #print('secret: ', secret)
+    weather_api_key = secret['api_key']
+
+except Exception as e:
+    raise e
+   
+# api key to use LangSmith
+langsmith_api_key = ""
+try:
+    get_langsmith_api_secret = secretsmanager.get_secret_value(
+        SecretId='langsmithapikey'
+    )
+    #print('get_langsmith_api_secret: ', get_langsmith_api_secret)
+    secret = json.loads(get_langsmith_api_secret['SecretString'])
+    #print('secret: ', secret)
+    langsmith_api_key = secret['langsmith_api_key']
+    langchain_project = secret['langchain_project']
+except Exception as e:
+    raise e
+
+if langsmith_api_key:
+    os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = langchain_project
+    
+# api key to use Tavily Search
+tavily_api_key = ""
+try:
+    get_tavily_api_secret = secretsmanager.get_secret_value(
+        SecretId='tavilyapikey'
+    )
+    #print('get_tavily_api_secret: ', get_tavily_api_secret)
+    secret = json.loads(get_tavily_api_secret['SecretString'])
+    #print('secret: ', secret)
+    tavily_api_key = secret['tavily_api_key']
+except Exception as e: 
+    raise e
+
+if tavily_api_key:
+    os.environ["TAVILY_API_KEY"] = tavily_api_key
+    
 # websocket
 connection_url = os.environ.get('connection_url')
 client = boto3.client('apigatewaymanagementapi', endpoint_url=connection_url)
@@ -116,20 +175,20 @@ def get_chat(profile_of_LLMs, selected_LLM):
     
     return chat
 
-def get_embedding(profile_of_LLMs, selected_LLM):
-    profile = profile_of_LLMs[selected_LLM]
+def get_embedding():
+    global selected_embedding
+    profile = LLM_for_embedding[selected_embedding]
     bedrock_region =  profile['bedrock_region']
-    modelId = profile['model_id']
-    print(f'Embedding: {selected_LLM}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    print(f'Embedding: {selected_embedding}, bedrock_region: {bedrock_region}')
     
     # bedrock   
     boto3_bedrock = boto3.client(
         service_name='bedrock-runtime',
-        region_name=bedrock_region,
+        # region_name=bedrock_region,  # use default
         config=Config(
             retries = {
                 'max_attempts': 30
-            }            
+            }
         )
     )
     
@@ -138,6 +197,11 @@ def get_embedding(profile_of_LLMs, selected_LLM):
         region_name = bedrock_region,
         model_id = 'amazon.titan-embed-text-v1' 
     )  
+    
+    if selected_embedding >= len(LLM_for_embedding)-1:
+        selected_embedding = 0
+    else:
+        selected_embedding = selected_embedding + 1
     
     return bedrock_embedding
 
@@ -1090,6 +1154,327 @@ def get_profile(function_type):
             
     return profile_of_LLMs
 
+def traslation(chat, text, input_language, output_language):
+    system = (
+        "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
+    )
+    human = "<article>{text}</article>"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    # print('prompt: ', prompt)
+    
+    chain = prompt | chat    
+    try: 
+        result = chain.invoke(
+            {
+                "input_language": input_language,
+                "output_language": output_language,
+                "text": text,
+            }
+        )
+        
+        msg = result.content
+        # print('translated text: ', msg)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+
+    return msg[msg.find('<result>')+8:len(msg)-9] # remove <result> tag
+
+@tool 
+def get_book_list(keyword: str) -> str:
+    """
+    Search book list by keyword and then return book list
+    keyword: search keyword
+    return: book list
+    """
+    
+    keyword = keyword.replace('\'','')
+
+    answer = ""
+    url = f"https://search.kyobobook.co.kr/search?keyword={keyword}&gbCode=TOT&target=total"
+    response = requests.get(url)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, "html.parser")
+        prod_info = soup.find_all("a", attrs={"class": "prod_info"})
+        
+        if len(prod_info):
+            answer = "추천 도서는 아래와 같습니다.\n"
+            
+        for prod in prod_info[:5]:
+            title = prod.text.strip().replace("\n", "")       
+            link = prod.get("href")
+            answer = answer + f"{title}, URL: {link}\n\n"
+    
+    return answer
+    
+@tool
+def get_current_time(format: str = f"%Y-%m-%d %H:%M:%S")->str:
+    """Returns the current date and time in the specified format"""
+    
+    format = format.replace('\'','')
+    timestr = datetime.datetime.now(timezone('Asia/Seoul')).strftime(format)
+    # print('timestr:', timestr)
+    
+    return timestr
+
+@tool
+def get_weather_info(city: str) -> str:
+    """
+    Search weather information by city name and then return weather statement.
+    city: the english name of city to search
+    return: weather statement
+    """    
+    
+    city = city.replace('\n','')
+    city = city.replace('\'','')
+    
+    profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
+    chat = get_chat(profile_of_LLMs, selected_LLM)
+                
+    if isKorean(city):
+        place = traslation(chat, city, "Korean", "English")
+        print('city (translated): ', place)
+    else:
+        place = city
+        city = traslation(chat, city, "English", "Korean")
+        print('city (translated): ', city)
+        
+    print('place: ', place)
+    
+    apiKey = weather_api_key
+    lang = 'en' 
+    units = 'metric' 
+    api = f"https://api.openweathermap.org/data/2.5/weather?q={place}&APPID={apiKey}&lang={lang}&units={units}"
+    # print('api: ', api)
+    
+    weather_str: str = f"{city}에 대한 날씨 정보가 없습니다."
+            
+    try:
+        result = requests.get(api)
+        result = json.loads(result.text)
+        print('result: ', result)
+    
+        if 'weather' in result:
+            overall = result['weather'][0]['main']
+            current_temp = result['main']['temp']
+            min_temp = result['main']['temp_min']
+            max_temp = result['main']['temp_max']
+            humidity = result['main']['humidity']
+            wind_speed = result['wind']['speed']
+            cloud = result['clouds']['all']
+            
+            weather_str = f"{city}의 현재 날씨의 특징은 {overall}이며, 현재 온도는 {current_temp}도 이고, 최저온도는 {min_temp}도, 최고 온도는 {max_temp}도 입니다. 현재 습도는 {humidity}% 이고, 바람은 초당 {wind_speed} 미터 입니다. 구름은 {cloud}% 입니다."
+            #weather_str = f"Today, the overall of {city} is {overall}, current temperature is {current_temp} degree, min temperature is {min_temp} degree, highest temperature is {max_temp} degree. huminity is {humidity}%, wind status is {wind_speed} meter per second. the amount of cloud is {cloud}%."            
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        # raise Exception ("Not able to request to LLM")    
+    
+    print('weather_str: ', weather_str)                            
+    return weather_str
+
+@tool
+def search_by_tavily(keyword: str) -> str:
+    """
+    Search general information by keyword and then return the result as a string.
+    keyword: search keyword
+    return: the information of keyword
+    """    
+    
+    keyword = keyword.replace('\'','')
+    
+    search = TavilySearchResults(k=5)
+                
+    answer = ""
+    output = search.invoke(keyword)
+    print('tavily output: ', output)
+    
+    for result in output[:5]:
+        content = result.get("content")
+        url = result.get("url")
+        
+        answer = answer + f"{content}, URL: {url}\n\n"
+    
+    return answer
+
+@tool    
+def search_by_opensearch(keyword: str) -> str:
+    """
+    Search technical information by keyword and then return the result as a string.
+    keyword: search keyword
+    return: the technical information of keyword
+    """    
+    
+    print('keyword: ', keyword)
+    keyword = keyword.replace('\'','')
+    keyword = keyword.replace('|','')
+    keyword = keyword.replace('\n','')
+    print('modified keyword: ', keyword)
+    
+    bedrock_embedding = get_embedding()
+        
+    vectorstore_opensearch = OpenSearchVectorSearch(
+        index_name = "idx-*", # all
+        is_aoss = False,
+        ef_search = 1024, # 512(default)
+        m=48,
+        #engine="faiss",  # default: nmslib
+        embedding_function = bedrock_embedding,
+        opensearch_url=opensearch_url,
+        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
+    ) 
+    
+    answer = ""
+    top_k = 4    
+    relevant_documents = vectorstore_opensearch.similarity_search_with_score(
+        query = keyword,
+        k = top_k,
+    )
+
+    for i, document in enumerate(relevant_documents):
+        print(f'## Document(opensearch-vector) {i+1}: {document}')
+        if i>top_k: 
+            break
+
+        excerpt = document[0].page_content        
+        uri = document[0].metadata['uri']
+                    
+        answer = answer + f"{excerpt}, URL: {uri}\n\n"
+    
+    return answer
+
+# define tools
+tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
+
+def get_react_prompt_template(): # (hwchase17/react) https://smith.langchain.com/hub/hwchase17/react
+    # Get the react prompt template    
+    return PromptTemplate.from_template("""다음은 Human과 Assistant의 친근한 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+
+사용할 수 있는 tools은 아래와 같습니다:
+
+{tools}
+
+다음의 format을 사용하세요.:
+
+Question: 답변하여야 할 input question 
+Thought: you should always think about what to do. 
+Action: 해야 할 action으로서 [{tool_names}]중 하나를 선택합니다.
+Action Input: action의 input
+Observation: action의 result
+... (Thought/Action/Action Input/Observation을 3번 반복 할 수 있습니다.)
+Thought: 나는 이제 Final Answer를 알고 있습니다. 
+Final Answer: original input에 대한 Final Answer
+
+너는 Human에게 해줄 응답이 있거나, Tool을 사용하지 않아도 되는 경우에, 다음 format을 사용하세요.:
+'''
+Thought: Tool을 사용해야 하나요? No
+Final Answer: [your response here]
+'''
+
+Begin!
+
+Question: {input}
+Thought:{agent_scratchpad}
+""")
+        
+def run_agent_react(connectionId, requestId, chat, query):
+    prompt_template = get_react_prompt_template()
+    print('prompt_template: ', prompt_template)
+    
+    #from langchain import hub
+    #prompt_template = hub.pull("hwchase17/react")
+    #print('prompt_template: ', prompt_template)
+    
+     # create agent
+    isTyping(connectionId, requestId)
+    agent = create_react_agent(chat, tools, prompt_template)
+    
+    agent_executor = AgentExecutor(
+        agent=agent, 
+        tools=tools, 
+        verbose=True, 
+        handle_parsing_errors=True,
+        max_iterations = 5
+    )
+    
+    # run agent
+    response = agent_executor.invoke({"input": query})
+    print('response: ', response)
+
+    # streaming    
+    msg = readStreamMsg(connectionId, requestId, response['output'])
+
+    msg = response['output']
+    print('msg: ', msg)
+            
+    return msg
+
+def get_react_chat_prompt_template():
+    # Get the react prompt template
+
+    return PromptTemplate.from_template("""다음은 Human과 Assistant의 친근한 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+
+사용할 수 있는 tools은 아래와 같습니다:
+
+{tools}
+
+다음의 format을 사용하세요.:
+
+Question: 답변하여야 할 input question 
+Thought: you should always think about what to do. 
+Action: 해야 할 action으로서 [{tool_names}]중 하나를 선택합니다.
+Action Input: action의 input
+Observation: action의 result
+... (Thought/Action/Action Input/Observation을 3번 반복 할 수 있습니다.)
+Thought: 나는 이제 Final Answer를 알고 있습니다. 
+Final Answer: original input에 대한 Final Answer
+
+너는 Human에게 해줄 응답이 있거나, Tool을 사용하지 않아도 되는 경우에, 다음 format을 사용하세요.:
+'''
+Thought: Tool을 사용해야 하나요? No
+Final Answer: [your response here]
+'''
+
+Begin!
+
+Previous conversation history:
+{chat_history}
+
+New input: {input}
+Thought:{agent_scratchpad}
+""")
+    
+def run_agent_react_chat(connectionId, requestId, chat, query):
+    # get template based on react 
+    prompt_template = get_react_chat_prompt_template()
+    print('prompt_template: ', prompt_template)
+    
+    # create agent
+    isTyping(connectionId, requestId)
+    agent = create_react_agent(chat, tools, prompt_template)
+    
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+    
+    history = memory_chain.load_memory_variables({})["chat_history"]
+    print('memory_chain: ', history)
+    
+    # run agent
+    response = agent_executor.invoke({
+        "input": query,
+        "chat_history": history
+    })
+    print('response: ', response)
+    
+    # streaming
+    msg = readStreamMsg(connectionId, requestId, response['output'])
+
+    msg = response['output']
+    print('msg: ', msg)
+            
+    return msg
+
 def getResponse(connectionId, jsonBody):
     userId  = jsonBody['user_id']
     # print('userId: ', userId)
@@ -1131,7 +1516,7 @@ def getResponse(connectionId, jsonBody):
     # print('profile: ', profile)
     
     chat = get_chat(profile_of_LLMs, selected_LLM)    
-    bedrock_embedding = get_embedding(profile_of_LLMs, selected_LLM)
+    bedrock_embedding = get_embedding()
 
     # allocate memory
     if userId in map_chain:  
@@ -1196,7 +1581,7 @@ def getResponse(connectionId, jsonBody):
             elif text == 'disableDebug':
                 isControlMsg = True
                 debugMessageMode = 'false'
-                msg  = "Debug messages will not be delivered to the client."
+                msg = "Debug messages will not be delivered to the client."
 
             elif text == 'clearMemory':
                 isControlMsg = True
@@ -1208,7 +1593,11 @@ def getResponse(connectionId, jsonBody):
             else:       
                 if conv_type == 'normal':      # normal
                     msg = general_conversation(connectionId, requestId, chat, text)      
-                                    
+                elif conv_type == 'agent-react':
+                    msg = run_agent_react(connectionId, requestId, chat, text)                
+                elif conv_type == 'agent-react-chat':
+                    msg = run_agent_react_chat(connectionId, requestId, chat, text)
+                    
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')
                     msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding)
