@@ -1245,8 +1245,8 @@ def get_weather_info(city: str) -> str:
     print('place: ', place)
     
     weather_str: str = f"{city}에 대한 날씨 정보가 없습니다."
-    if weather_api_key: 
-        apiKey = weather_api_key
+    if tavily_api_key: 
+        apiKey = tavily_api_key
         lang = 'en' 
         units = 'metric' 
         api = f"https://api.openweathermap.org/data/2.5/weather?q={place}&APPID={apiKey}&lang={lang}&units={units}"
