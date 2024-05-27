@@ -1294,7 +1294,7 @@ def search_by_tavily(keyword: str) -> str:
         output = search.invoke(keyword)
         print('tavily output: ', output)
         
-        for result in output[:5]:
+        for result in output[:3]:
             content = result.get("content")
             url = result.get("url")
             
@@ -1330,7 +1330,7 @@ def search_by_opensearch(keyword: str) -> str:
     ) 
     
     answer = ""
-    top_k = 4    
+    top_k = 3    
     relevant_documents = vectorstore_opensearch.similarity_search_with_score(
         query = keyword,
         k = top_k,
@@ -1338,8 +1338,6 @@ def search_by_opensearch(keyword: str) -> str:
 
     for i, document in enumerate(relevant_documents):
         print(f'## Document(opensearch-vector) {i+1}: {document}')
-        if i>top_k: 
-            break
 
         excerpt = document[0].page_content        
         uri = document[0].metadata['uri']
