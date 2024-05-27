@@ -465,6 +465,8 @@ function addSentMessageForSummary(requestId, timestr, text) {
 function addReceivedMessage(requestId, msg) {
     let idx = index;
 
+    sender = "Chatbot"
+
     // console.log("add received message: "+msg);
     if(!indexList.get(requestId+':receive')) {
         indexList.put(requestId+':receive', idx);
