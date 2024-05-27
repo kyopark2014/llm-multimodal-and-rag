@@ -513,6 +513,17 @@ function addReceivedMessage(requestId, msg) {
     chatPanel.scrollTop = chatPanel.scrollHeight;  // scroll needs to move bottom    
 }
 
+function addNotifyMessage(msg) {
+    console.log("index:", index);   
+
+    msglist[index].innerHTML =  
+        `<div class="notification-text">${msg}</div>`;     
+
+    index++;
+
+    chatPanel.scrollTop = chatPanel.scrollHeight;  // scroll needs to move bottom
+}
+
 function updateChatHistory() {
     /* for(let i=0;i<maxMsgItems;i++) {
         msglist[i].innerHTML = `<div></div>`
