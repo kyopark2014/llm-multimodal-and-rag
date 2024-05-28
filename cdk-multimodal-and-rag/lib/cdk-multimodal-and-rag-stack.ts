@@ -107,12 +107,12 @@ const titan_embedding_v1 = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "titan",
-    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+    "model_id": "amazon.titan-embed-text-v1"
   },
   {
     "bedrock_region": "us-east-1", // N.Virginia
     "model_type": "titan",
-    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+    "model_id": "amazon.titan-embed-text-v1"
   },
   {
     "bedrock_region": "ap-northeast-1", // Tokyo
