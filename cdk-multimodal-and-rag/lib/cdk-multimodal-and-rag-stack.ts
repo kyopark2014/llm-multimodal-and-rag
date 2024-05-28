@@ -753,7 +753,6 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
         timeout: cdk.Duration.seconds(600),
         memorySize: 8192,
         environment: {
-          bedrock_region: profile_of_LLMs[i].bedrock_region,
           s3_bucket: s3Bucket.bucketName,
           s3_prefix: s3_prefix,
           opensearch_account: opensearch_account,
