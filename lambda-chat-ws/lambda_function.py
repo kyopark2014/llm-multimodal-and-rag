@@ -149,7 +149,7 @@ def get_chat():
     profile = LLM_for_chat[selected_chat]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    print(f'LLM: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
     maxOutputTokens = int(profile['maxOutputTokens'])
                           
     # bedrock   
@@ -189,7 +189,7 @@ def get_multimodal():
     profile = LLM_for_multimodal[selected_multimodal]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    print(f'selected_multimodal: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    print(f'LLM: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
     maxOutputTokens = int(profile['maxOutputTokens'])
                           
     # bedrock   
@@ -228,7 +228,7 @@ def get_embedding():
     profile = LLM_for_embedding[selected_embedding]
     bedrock_region =  profile['bedrock_region']
     model_id = profile['model_id']
-    print(f'selected_embedding: {selected_embedding}, bedrock_region: {bedrock_region}')
+    print(f'Embedding: {selected_embedding}, bedrock_region: {bedrock_region}')
     
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -1546,22 +1546,13 @@ def getResponse(connectionId, jsonBody):
     
     global enableReference
     global map_chain, memory_chain, debugMessageMode
-        
-    LLM_for_chat = get_profile(function_type)
-    print('length of profile: ', len(LLM_for_chat))
-    print ('selected_chat: ', selected_chat)
-    
-    # Multi-region LLM
-    if selected_chat >= len(LLM_for_chat):
-        selected_chat = 0       
-        print ('new selected_chat: ', selected_chat) 
-        
+                 
+    # Multi-LLM
     profile = LLM_for_chat[selected_chat]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    # print('profile: ', profile)
-    
+      
     chat = get_chat()    
     bedrock_embedding = get_embedding()
 

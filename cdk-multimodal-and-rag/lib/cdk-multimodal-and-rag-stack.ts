@@ -636,8 +636,6 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
       memorySize: 8192,
       role: roleLambdaWebsocket,
       environment: {
-        // bedrock_region: bedrock_region,
-        // model_id: model_id,
         s3_bucket: s3Bucket.bucketName,
         s3_prefix: s3_prefix,
         callLogTableName: callLogTableName,
@@ -651,11 +649,9 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
         debugMessageMode: debugMessageMode,
         useParallelRAG: useParallelRAG,
         numberOfRelevantDocs: numberOfRelevantDocs,
-        profile_of_LLMs: JSON.stringify(profile_of_LLMs),
+        LLM_for_chat:JSON.stringify(claude3_sonnet),          
+        LLM_for_multimodal:JSON.stringify(claude3_sonnet),          
         LLM_for_embedding: JSON.stringify(titan_embedding_v1),
-        claude3_sonnet: JSON.stringify(claude3_sonnet),
-        claude2: JSON.stringify(claude2),
-        claude_instant: JSON.stringify(claude_instant),
         googleApiSecret: googleApiSecret.secretName,
         projectName: projectName
       }
