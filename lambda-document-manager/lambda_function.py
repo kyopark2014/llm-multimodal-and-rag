@@ -20,8 +20,6 @@ from opensearchpy import OpenSearch
 from pptx import Presentation
 from multiprocessing import Process, Pipe
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.chat_models import BedrockChat
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_aws import ChatBedrock
 
@@ -159,7 +157,7 @@ def get_embedding():
     profile = LLM_for_embedding[selected_embedding]
     bedrock_region =  profile['bedrock_region']
     model_id = profile['model_id']
-    print(f'Embedding: {selected_embedding}, bedrock_region: {bedrock_region}')
+    print(f'selected_embedding: {selected_embedding}, bedrock_region: {bedrock_region}, model_id: {model_id}')
     
     # bedrock   
     boto3_bedrock = boto3.client(
