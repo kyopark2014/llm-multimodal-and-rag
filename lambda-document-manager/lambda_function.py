@@ -28,7 +28,6 @@ s3_client = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
 meta_prefix = "metadata/"
-profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
 enableParallelSummay = os.environ.get('enableParallelSummay')
 
 opensearch_account = os.environ.get('opensearch_account')
@@ -707,7 +706,7 @@ def lambda_handler(event, context):
                                 function_name = code[start+1:end]
                                 # print('function_name: ', function_name)
                                                 
-                                chat = get_chat(profile_of_LLMs, 0)      
+                                chat = get_multimodal()      
                                         
                                 if file_type == 'py':
                                     mode = 'python'
@@ -760,7 +759,7 @@ def lambda_handler(event, context):
                     img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
                                                     
                     # extract text from the image
-                    chat = get_chat(profile_of_LLMs, 0)    
+                    chat = get_multimodal()    
                     text = extract_text(chat, img_base64)
                     extracted_text = text[text.find('<result>')+8:len(text)-9] # remove <result> tag
                     print('extracted_text: ', extracted_text)
