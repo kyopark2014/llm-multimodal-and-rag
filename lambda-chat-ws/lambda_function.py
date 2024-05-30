@@ -56,6 +56,7 @@ LLM_for_embedding = json.loads(os.environ.get('LLM_for_embedding'))
 selected_chat = 0
 selected_multimodal = 0
 selected_embedding = 0
+separated_chat_history = os.environ.get('separated_chat_history')
 
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
 roleArn = os.environ.get('roleArn')
@@ -1258,7 +1259,7 @@ def get_book_list(keyword: str) -> str:
     return answer
     
 @tool
-def get_current_time(format: str)->str:
+def get_current_time(format: str=f"%Y-%m-%d %H:%M:%S")->str:
     """Returns the current date and time in the specified format"""
     # f"%Y-%m-%d %H:%M:%S"
     
@@ -1407,7 +1408,7 @@ def get_react_prompt_template(): # (hwchase17/react) https://smith.langchain.com
 
 Question: 답변하여야 할 input question 
 Thought: you should always think about what to do. 
-Action: 해야 할 action으로서 [{tool_names}]중 하나를 선택합니다.
+Action: 해야 할 action로서 [{tool_names}]에서 tool의 name만을 가져옵니다. 
 Action Input: action의 input
 Observation: action의 result
 ... (Thought/Action/Action Input/Observation을 3번 반복 할 수 있습니다.)
@@ -1458,6 +1459,33 @@ def run_agent_react(connectionId, requestId, chat, query):
             
     return msg
 
+def run_agent_react_chat_using_revised_question(connectionId, requestId, chat, query):
+    # revise question
+    revised_question = revise_question(connectionId, requestId, chat, query)     
+    print('revised_question: ', revised_question)  
+        
+    # get template based on react 
+    prompt_template = get_react_prompt_template(agentLangMode)
+    print('prompt_template: ', prompt_template)
+    
+    # create agent
+    isTyping(connectionId, requestId)
+    agent = create_react_agent(chat, tools, prompt_template)
+    
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+    
+    # run agent
+    response = agent_executor.invoke({"input": revised_question})
+    print('response: ', response)
+    
+    # streaming
+    msg = readStreamMsg(connectionId, requestId, response['output'])
+
+    msg = response['output']
+    print('msg: ', msg)
+            
+    return msg
+
 def get_react_chat_prompt_template():
     # Get the react prompt template
 
@@ -1471,7 +1499,7 @@ def get_react_chat_prompt_template():
 
 Question: 답변하여야 할 input question 
 Thought: you should always think about what to do. 
-Action: 해야 할 action으로서 [{tool_names}]중 하나를 선택합니다.
+Action: 해야 할 action로서 [{tool_names}]에서 tool의 name만을 가져옵니다. 
 Action Input: action의 input
 Observation: action의 result
 ... (Thought/Action/Action Input/Observation을 3번 반복 할 수 있습니다.)
@@ -1633,8 +1661,11 @@ def getResponse(connectionId, jsonBody):
                     msg = general_conversation(connectionId, requestId, chat, text)      
                 elif conv_type == 'agent-react':
                     msg = run_agent_react(connectionId, requestId, chat, text)                
-                elif conv_type == 'agent-react-chat':
-                    msg = run_agent_react_chat(connectionId, requestId, chat, text)
+                elif conv_type == 'agent-react-chat':         
+                    if separated_chat_history=='true': 
+                        msg = run_agent_react_chat_using_revised_question(connectionId, requestId, chat, text)
+                    else:
+                        msg = run_agent_react_chat(connectionId, requestId, chat, text)
                     
                 elif conv_type == 'qa':   # RAG
                     print(f'rag_type: {rag_type}')

@@ -29,13 +29,14 @@ const opensearch_account = "admin";
 const opensearch_passwd = "Wifi1234!";
 const enableReference = 'true';
 let opensearch_url = "";
-const debugMessageMode = 'true'; // if true, debug messages will be delivered to the client.
+const debugMessageMode = 'false'; // if true, debug messages will be delivered to the client.
 const useParallelRAG = 'true';
 const numberOfRelevantDocs = '4';
 const supportedFormat = JSON.stringify(["pdf", "txt", "csv", "pptx", "ppt", "docx", "doc", "xlsx", "py", "js", "md", "jpeg", "jpg", "png"]);  
 
 const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default)
 const enableParallelSummay = 'true';
+const separated_chat_history = 'true';
 
 const claude3_sonnet = [
   {
@@ -653,7 +654,8 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
         LLM_for_multimodal: JSON.stringify(claude3_sonnet),          
         LLM_for_embedding: JSON.stringify(titan_embedding_v1),
         googleApiSecret: googleApiSecret.secretName,
-        projectName: projectName
+        projectName: projectName,
+        separated_chat_history: separated_chat_history
       }
     });     
     lambdaChatWebsocket.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));  
