@@ -1413,7 +1413,7 @@ Thought: you should always think about what to do.
 Action: 해야 할 action로서 [{tool_names}]에서 tool의 name만을 가져옵니다. 
 Action Input: action의 input
 Observation: action의 result
-... (Thought/Action/Action Input/Observation을 3번 반복 할 수 있습니다.)
+... (Thought/Action/Action Input/Observation을 5번 반복 할 수 있습니다.)
 Thought: 나는 이제 Final Answer를 알고 있습니다. 
 Final Answer: original input에 대한 Final Answer
 
@@ -1504,7 +1504,7 @@ Thought: you should always think about what to do.
 Action: 해야 할 action로서 [{tool_names}]에서 tool의 name만을 가져옵니다. 
 Action Input: action의 input
 Observation: action의 result
-... (Thought/Action/Action Input/Observation을 3번 반복 할 수 있습니다.)
+... (Thought/Action/Action Input/Observation을 5번 반복 할 수 있습니다.)
 Thought: 나는 이제 Final Answer를 알고 있습니다. 
 Final Answer: original input에 대한 Final Answer
 
