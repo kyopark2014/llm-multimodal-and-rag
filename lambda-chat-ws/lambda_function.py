@@ -1332,20 +1332,22 @@ def search_by_tavily(keyword: str) -> str:
     return: the information of keyword
     """    
     
-    answer = ""
+    answer = ""    
     if tavily_api_key:
         keyword = keyword.replace('\'','')
         
-        search = TavilySearchResults(k=5)
-        
+        search = TavilySearchResults(k=3)
+                    
         output = search.invoke(keyword)
         print('tavily output: ', output)
         
-        for result in output[:3]:
-            content = result.get("content")
-            url = result.get("url")
+        for result in output:
+            print('result: ', result)
+            if result:
+                content = result.get("content")
+                url = result.get("url")
             
-            answer = answer + f"{content}, URL: {url}\n\n"
+                answer = answer + f"{content}, URL: {url}\n"
         
     return answer
 
