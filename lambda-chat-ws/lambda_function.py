@@ -1465,7 +1465,7 @@ def run_agent_react_chat_using_revised_question(connectionId, requestId, chat, q
     print('revised_question: ', revised_question)  
         
     # get template based on react 
-    prompt_template = get_react_prompt_template(agentLangMode)
+    prompt_template = get_react_prompt_template()
     print('prompt_template: ', prompt_template)
     
     # create agent
