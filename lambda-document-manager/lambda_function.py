@@ -194,24 +194,29 @@ vectorstore = OpenSearchVectorSearch(
     http_auth=(opensearch_account, opensearch_passwd),
 )  
 
-def store_document_for_opensearch(docs, key):    
-    objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
-    print('objectName: ', objectName)    
-    metadata_key = meta_prefix+objectName+'.metadata.json'
-    print('meta file name: ', metadata_key)    
-    delete_document_if_exist(metadata_key)
+def store_document_for_opensearch(file_type, key):
+    print('upload to opensearch: ', key) 
+    contents = load_document(file_type, key)
     
-    try:        
-        response = vectorstore.add_documents(docs, bulk_size = 10000)
-        print('response of adding documents: ', response)
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                
-        #raise Exception ("Not able to request to LLM")
-
-    print('uploaded into opensearch')
+    if len(contents) == 0:
+        print('no contents: ', key)
+        return []
     
-    return response
+    # contents = str(contents).replace("\n"," ") 
+    print('length: ', len(contents))
+    
+    docs = []
+    docs.append(Document(
+        page_content=contents,
+        metadata={
+            'name': key,
+            # 'page':i+1,
+            'uri': path+parse.quote(key)
+        }
+    ))
+    print('docs: ', docs)
+    
+    return add_to_opensearch(docs, key)    
     
 def delete_document_if_exist(metadata_key):
     try: 
