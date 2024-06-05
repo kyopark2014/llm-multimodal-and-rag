@@ -202,7 +202,7 @@ def store_document_for_opensearch(docs, key):
     delete_document_if_exist(metadata_key)
     
     try:        
-        response = vectorstore.add_documents(docs, bulk_size = 2000)
+        response = vectorstore.add_documents(docs, bulk_size = 10000)
         print('response of adding documents: ', response)
     except Exception:
         err_msg = traceback.format_exc()
