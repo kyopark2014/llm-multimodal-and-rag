@@ -38,11 +38,10 @@ sqsUrl = os.environ.get('sqsUrl')
 doc_prefix = s3_prefix+'/'
 LLM_for_chat = json.loads(os.environ.get('LLM_for_chat'))
 LLM_for_multimodal= json.loads(os.environ.get('LLM_for_multimodal'))
-LLM_for_embedding = json.loads(os.environ.get('LLM_for_embedding'))
+LLM_embedding = json.loads(os.environ.get('LLM_embedding'))
 selected_chat = 0
 selected_multimodal = 0
 selected_embedding = 0
-
 
 roleArn = os.environ.get('roleArn') 
 path = os.environ.get('path')
@@ -154,7 +153,7 @@ def get_multimodal():
 
 def get_embedding():
     global selected_embedding
-    profile = LLM_for_embedding[selected_embedding]
+    profile = LLM_embedding[selected_embedding]
     bedrock_region =  profile['bedrock_region']
     model_id = profile['model_id']
     print(f'selected_embedding: {selected_embedding}, bedrock_region: {bedrock_region}, model_id: {model_id}')
@@ -177,7 +176,7 @@ def get_embedding():
     )  
     
     selected_embedding = selected_embedding + 1
-    if selected_embedding == len(LLM_for_embedding):
+    if selected_embedding == len(LLM_embedding):
         selected_embedding = 0
     
     return bedrock_embedding
@@ -689,7 +688,7 @@ def add_to_opensearch(docs, key):
         parent_docs = parent_splitter.split_documents(docs)
         print('len(parent_docs): ', len(parent_docs))
         if len(parent_docs):
-            print('parent_docs[0]: ', parent_docs[0])
+            # print('parent_docs[0]: ', parent_docs[0])
             # parent_doc_ids = [str(uuid.uuid4()) for _ in parent_docs]
             # print('parent_doc_ids: ', parent_doc_ids)
             

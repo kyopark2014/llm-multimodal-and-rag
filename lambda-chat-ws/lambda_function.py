@@ -53,7 +53,7 @@ doc_prefix = s3_prefix+'/'
 speech_prefix = 'speech/'
 LLM_for_chat = json.loads(os.environ.get('LLM_for_chat'))
 LLM_for_multimodal= json.loads(os.environ.get('LLM_for_multimodal'))
-LLM_for_embedding = json.loads(os.environ.get('LLM_for_embedding'))
+LLM_embedding = json.loads(os.environ.get('LLM_embedding'))
 priorty_search_embedding = json.loads(os.environ.get('priorty_search_embedding'))
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 
@@ -230,7 +230,7 @@ def get_multimodal():
 
 def get_embedding():
     global selected_embedding
-    profile = LLM_for_embedding[selected_embedding]
+    profile = LLM_embedding[selected_embedding]
     bedrock_region =  profile['bedrock_region']
     model_id = profile['model_id']
     print(f'Embedding: {selected_embedding}, bedrock_region: {bedrock_region}')
@@ -253,10 +253,40 @@ def get_embedding():
     )  
     
     selected_embedding = selected_embedding + 1
-    if selected_embedding == len(LLM_for_embedding):
+    if selected_embedding == len(LLM_embedding):
         selected_embedding = 0
     
     return bedrock_embedding
+
+def get_ps_embedding():
+    global selected_ps_embedding
+    profile = priorty_search_embedding[selected_ps_embedding]
+    bedrock_region =  profile['bedrock_region']
+    model_id = profile['model_id']
+    print(f'selected_ps_embedding: {selected_ps_embedding}, bedrock_region: {bedrock_region}, model_id: {model_id}')
+    
+    # bedrock   
+    boto3_bedrock = boto3.client(
+        service_name='bedrock-runtime',
+        region_name=bedrock_region, 
+        config=Config(
+            retries = {
+                'max_attempts': 30
+            }
+        )
+    )
+    
+    bedrock_ps_embedding = BedrockEmbeddings(
+        client=boto3_bedrock,
+        region_name = bedrock_region,
+        model_id = model_id
+    )  
+    
+    selected_ps_embedding = selected_ps_embedding + 1
+    if selected_ps_embedding == len(priorty_search_embedding):
+        selected_ps_embedding = 0
+    
+    return bedrock_ps_embedding
 
 def sendMessage(id, body):
     try:

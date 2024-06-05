@@ -666,7 +666,7 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
         numberOfRelevantDocs: numberOfRelevantDocs,
         LLM_for_chat: JSON.stringify(claude3_sonnet),          
         LLM_for_multimodal: JSON.stringify(claude3_sonnet),          
-        LLM_for_embedding: JSON.stringify(titan_embedding_v2),
+        LLM_embedding: JSON.stringify(titan_embedding_v2),
         priorty_search_embedding: JSON.stringify(titan_embedding_v1),
         googleApiSecret: googleApiSecret.secretName,
         projectName: projectName,
@@ -783,7 +783,7 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
           supportedFormat: supportedFormat,
           LLM_for_chat: JSON.stringify(claude3_sonnet),          
           LLM_for_multimodal: JSON.stringify(claude3_sonnet),          
-          LLM_for_embedding: JSON.stringify(titan_embedding_v1),
+          LLM_embedding: JSON.stringify(titan_embedding_v1),
           enableParallelSummay: enableParallelSummay,
           enalbeParentDocumentRetrival: enalbeParentDocumentRetrival
         }
