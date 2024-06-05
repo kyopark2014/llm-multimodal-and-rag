@@ -60,6 +60,7 @@ enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 selected_chat = 0
 selected_multimodal = 0
 selected_embedding = 0
+selected_ps_embedding = 0
 separated_chat_history = os.environ.get('separated_chat_history')
 
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
