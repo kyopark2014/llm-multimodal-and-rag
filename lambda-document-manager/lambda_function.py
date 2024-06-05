@@ -306,23 +306,9 @@ def load_document(file_type, key):
         except Exception:
                 err_msg = traceback.format_exc()
                 print('err_msg: ', err_msg)
-                # raise Exception ("Not able to load docx")   
-    
-    texts = ""
-    if len(contents)>0:
-        new_contents = str(contents).replace("\n"," ") 
-        print('length: ', len(new_contents))
-        
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=100,
-            separators=["\n\n", "\n", ".", " ", ""],
-            length_function = len,
-        ) 
-
-        texts = text_splitter.split_text(new_contents) 
+                # raise Exception ("Not able to load docx")       
                         
-    return texts
+    return contents
 
 # load a code file from s3
 def load_code(file_type, key):
