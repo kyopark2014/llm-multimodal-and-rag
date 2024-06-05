@@ -462,6 +462,14 @@ def delete_document_if_exist(metadata_key):
         raise Exception ("Not able to create meta file")
 ```
 
+### Agent 정의 및 활용
+
+[LLM Agent](https://github.com/kyopark2014/llm-agent)와 같이, 다양한 API를 이용하기 위하여 Agent를 이용할 수 있습니다. 메뉴에서 ReAct나 ReAct chat을 이용해 기능을 확인할 수 있습니다.
+
+### Parent Document Retrieval
+
+RAG의 검색정확도를 향상시키기 위한 여러가지 방법중에 Parent/Child Chunking을 이용할 수 있습니다. [Parent Document Retrieval](https://github.com/kyopark2014/korean-chatbot-using-amazon-bedrock/blob/main/parent-document-retrieval.md)에서는 parent/child로 chunking 전략을 달리하는 방법에 대해 설명합니다. 
+
 
 ### Google Search API 활용
 
