@@ -306,11 +306,11 @@ def store_image_for_opensearch(key):
         height = int(height/2)
         isResized = True
         print(f"width: {width}, height: {height}, size: {width*height}")
-                        
-    if isResized:
-        img = img.resize((width, height))
-                        
-    try: 
+           
+    try:             
+        if isResized:
+            img = img.resize((width, height))
+                             
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
