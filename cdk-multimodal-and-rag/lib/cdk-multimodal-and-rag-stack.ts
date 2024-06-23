@@ -69,7 +69,25 @@ const claude3_sonnet = [
     "model_type": "claude3",
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
     "maxOutputTokens": "4096"
-  }  
+  },
+  {
+    "bedrock_region": "ca-central-1", // Canada
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "maxOutputTokens": "4096"
+  },
+  {
+    "bedrock_region": "eu-west-2", // London
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "maxOutputTokens": "4096"
+  },
+  {
+    "bedrock_region": "sa-east-1", // Sao Paulo
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "maxOutputTokens": "4096"
+  }
 ];
 
 const claude3_haiku = [
@@ -102,47 +120,23 @@ const claude3_haiku = [
     "model_type": "claude3",
     "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
     "maxOutputTokens": "4096"
-  }
-];
-
-const claude_instant = [
+  },  
   {
-    "bedrock_region": "us-west-2", // Oregon
-    "model_type": "claude",
-    "model_id": "anthropic.claude-instant-v1",
+    "bedrock_region": "ca-central-1", // Canada
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
     "maxOutputTokens": "4096"
   },
   {
-    "bedrock_region": "us-east-1", // N.Virginia
-    "model_type": "claude",
-    "model_id": "anthropic.claude-instant-v1",
+    "bedrock_region": "eu-west-2", // London
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
     "maxOutputTokens": "4096"
   },
   {
-    "bedrock_region": "ap-northeast-1", // Tokyo
-    "model_type": "claude",
-    "model_id": "anthropic.claude-instant-v1",
-    "maxOutputTokens": "4096"
-  },    
-  {
-    "bedrock_region": "eu-central-1", // Europe (Frankfurt)
-    "model_type": "claude",
-    "model_id": "anthropic.claude-instant-v1",
-    "maxOutputTokens": "4096"
-    },
-];
-
-const claude2 = [
-  {
-    "bedrock_region": "us-west-2", // Oregon
-    "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",   
-    "maxOutputTokens": "4096"
-  },
-  {
-    "bedrock_region": "us-east-1", // N.Virginia
-    "model_type": "claude",
-    "model_id": "anthropic.claude-v2:1",
+    "bedrock_region": "sa-east-1", // Sao Paulo
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
     "maxOutputTokens": "4096"
   }
 ];
@@ -178,6 +172,21 @@ const titan_embedding_v2 = [
   },
   {
     "bedrock_region": "us-east-1", // N.Virginia
+    "model_type": "titan",
+    "model_id": "amazon.titan-embed-text-v2:0"
+  },
+  {
+    "bedrock_region": "ca-central-1", // Canada
+    "model_type": "titan",
+    "model_id": "amazon.titan-embed-text-v2:0"
+  },
+  {
+    "bedrock_region": "eu-west-2", // London
+    "model_type": "titan",
+    "model_id": "amazon.titan-embed-text-v2:0"
+  },
+  {
+    "bedrock_region": "sa-east-1", // Sao Paulo
     "model_type": "titan",
     "model_id": "amazon.titan-embed-text-v2:0"
   }
