@@ -796,7 +796,8 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
     const s3PutEventSource = new lambdaEventSources.S3EventSource(s3Bucket, {
       events: [
         s3.EventType.OBJECT_CREATED_PUT,
-        s3.EventType.OBJECT_REMOVED_DELETE
+        s3.EventType.OBJECT_REMOVED_DELETE,
+        s3.EventType.OBJECT_CREATED_COMPLETE_MULTIPART_UPLOAD
       ],
       filters: [
         { prefix: s3_prefix+'/' },
