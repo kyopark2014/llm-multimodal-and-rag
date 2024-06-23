@@ -38,7 +38,7 @@ const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default
 const enableParallelSummay = 'true';
 const separated_chat_history = 'true';
 const enalbeParentDocumentRetrival = 'true';
-const enableImageExtraction = 'true';
+const enableImageExtraction = 'false';
 
 const claude3_sonnet = [
   {
