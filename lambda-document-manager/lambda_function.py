@@ -804,7 +804,7 @@ def lambda_handler(event, context):
             else: 
                 print('This file format is not supported: ', file_type)                
                     
-        elif eventName == "ObjectCreated:Put":            
+        elif eventName == "ObjectCreated:Put" or eventName == "ObjectCreated:CompleteMultipartUpload":          
             size = 0
             try:
                 s3obj = s3_client.get_object(Bucket=bucket, Key=key)
