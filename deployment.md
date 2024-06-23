@@ -6,12 +6,14 @@
 
 - [Model access - Oregon](https://us-west-2.console.aws.amazon.com/bedrock/home?region=us-west-2#/modelaccess)
 - [Model access - N.Virginia](https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess)
-- [Model access - Sydney](https://ap-southeast-2.console.aws.amazon.com/bedrock/home?region=ap-southeast-2#/modelaccess),
-- [Model access - Paris](https://eu-west-3.console.aws.amazon.com/bedrock/home?region=eu-west-3#/modelaccess)
-- [Model access - Mumbai](https://ap-south-1.console.aws.amazon.com/bedrock/home?region=ap-south-1#/modelaccess)
 - [Model access - Canada](https://ca-central-1.console.aws.amazon.com/bedrock/home?region=ca-central-1#/modelaccess)
 - [Model access - London](https://eu-west-2.console.aws.amazon.com/bedrock/home?region=eu-west-2#/modelaccess)
 - [Model access - Sao Paulo](https://sa-east-1.console.aws.amazon.com/bedrock/home?region=sa-east-1#/modelaccess)
+
+<!-- 
+- [Model access - Sydney](https://ap-southeast-2.console.aws.amazon.com/bedrock/home?region=ap-southeast-2#/modelaccess),
+- [Model access - Paris](https://eu-west-3.console.aws.amazon.com/bedrock/home?region=eu-west-3#/modelaccess)
+- [Model access - Mumbai](https://ap-south-1.console.aws.amazon.com/bedrock/home?region=ap-south-1#/modelaccess)  -->
 
 
 ![noname](https://github.com/kyopark2014/llm-chatbot-using-claude3/assets/52392004/ca7f361a-1993-498e-93b6-ef19c620cbb1)
