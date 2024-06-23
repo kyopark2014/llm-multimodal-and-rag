@@ -1,6 +1,6 @@
 # 인프라 설치하기
 
-## LLM 사용 권한 설정하기
+## 모델 사용 권한 설정하기
 
 여기서는 Multi-Region LLM을 사용하기 위하여, 아래 링크에 접속하여, [Edit]를 선택한 후에 모든 모델을 사용할 수 있도록 설정합니다. 특히 Anthropic Claude와 "Titan Embeddings G1 - Text"은 LLM 및 Vector Embedding을 위해서 반드시 사용이 가능하여야 합니다.
 
