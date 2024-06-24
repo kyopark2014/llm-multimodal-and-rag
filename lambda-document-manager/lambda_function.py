@@ -23,6 +23,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_aws import ChatBedrock
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from docx.enum.shape import WD_INLINE_SHAPE_TYPE
 
 sqs = boto3.client('sqs')
 s3_client = boto3.client('s3')  
@@ -436,7 +437,91 @@ def add_to_opensearch(docs, key):
             #raise Exception ("Not able to add docs in opensearch")    
     return ids
     
-def extract_images_from_ppt(prs, key):
+def extract_images_from_pdf(reader, key):
+    picture_count = 1
+    
+    extracted_image_files = []
+    print('pages: ', len(reader.pages))
+    for i, page in enumerate(reader.pages):
+        print('page: ', page)
+        
+        
+        for image_file_object in page.images:
+            print('image_file_object: ', image_file_object)        
+            #pixels = BytesIO(image_file_object.data)
+            
+            img_name = image_file_object.name
+            print('img_name: ', img_name)
+            
+            if img_name in extracted_image_files:
+                print('skip....')
+                continue
+            
+            extracted_image_files.append(img_name)
+            # print('list: ', extracted_image_files)
+            
+            ext = img_name.split('.')[-1]            
+            contentType = ""
+            if ext == 'png':
+                contentType = 'image/png'
+            elif ext == 'jpg' or ext == 'jpeg':
+                contentType = 'image/jpeg'
+            elif ext == 'gif':
+                contentType = 'image/gif'
+            elif ext == 'bmp':
+                contentType = 'image/bmp'
+            elif ext == 'tiff' or ext == 'tif':
+                contentType = 'image/tiff'
+            elif ext == 'svg':
+                contentType = 'image/svg+xml'
+            elif ext == 'webp':
+                contentType = 'image/webp'
+            elif ext == 'ico':
+                contentType = 'image/x-icon'
+            elif ext == 'eps':
+                contentType = 'image/eps'
+            # print('contentType: ', contentType)
+            
+            if contentType:                
+                image_bytes = image_file_object.data
+
+                pixels = BytesIO(image_bytes)
+                pixels.seek(0, 0)
+                            
+                # get path from key
+                objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+                folder = s3_prefix+'/files/'+objectName+'/'
+                # print('folder: ', folder)
+                            
+                img_key = folder+img_name
+                
+                response = s3_client.put_object(
+                    Bucket=s3_bucket,
+                    Key=img_key,
+                    ContentType=contentType,
+                    Body=pixels
+                )
+                print('response: ', response)
+                            
+                # metadata
+                img_meta = {   # not used yet
+                    'bucket': s3_bucket,
+                    'key': img_key,
+                    'url': path+img_key,
+                    'ext': 'png',
+                    'page': i+1,
+                    'original': key
+                }
+                print('img_meta: ', img_meta)
+                            
+                picture_count += 1
+                    
+                extracted_image_files.append(img_key)
+    
+    print('extracted_image_files: ', extracted_image_files)    
+    return extracted_image_files
+    
+def extract_images_from_pptx(prs, key):
     picture_count = 1
     
     extracted_image_files = []
@@ -447,6 +532,7 @@ def extract_images_from_ppt(prs, key):
                 image = shape.image
                 # image bytes to PIL Image object
                 image_bytes = image.blob
+                
                 pixels = BytesIO(image_bytes)
                 pixels.seek(0, 0)
                         
@@ -469,7 +555,7 @@ def extract_images_from_ppt(prs, key):
                 print('response: ', response)
                         
                 # metadata
-                img_meta = {
+                img_meta = { # not used yet
                     'bucket': s3_bucket,
                     'key': img_key,
                     'url': path+img_key,
@@ -485,6 +571,83 @@ def extract_images_from_ppt(prs, key):
     
     print('extracted_image_files: ', extracted_image_files)    
     return extracted_image_files
+
+def extract_images_from_docx(doc_contents, key):
+    picture_count = 1
+    extracted_image_files = []
+    
+    for inline_shape in doc_contents.inline_shapes:
+        #print('inline_shape.type: ', inline_shape.type)                
+        if inline_shape.type == WD_INLINE_SHAPE_TYPE.PICTURE:
+            rId = inline_shape._inline.graphic.graphicData.pic.blipFill.blip.embed
+            print('rId: ', rId)
+        
+            image_part = doc_contents.part.related_parts[rId]
+        
+            filename = image_part.filename
+            print('filename: ', filename)
+        
+            bytes_of_image = image_part.image.blob
+            pixels = BytesIO(bytes_of_image)
+            pixels.seek(0, 0)
+                    
+            # get path from key
+            objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+            folder = s3_prefix+'/files/'+objectName+'/'
+            print('folder: ', folder)
+            
+            fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{picture_count}"  
+            print('fname: ', fname)
+                            
+            ext = filename.split('.')[-1]            
+            contentType = ""
+            if ext == 'png':
+                contentType = 'image/png'
+            elif ext == 'jpg' or ext == 'jpeg':
+                contentType = 'image/jpeg'
+            elif ext == 'gif':
+                contentType = 'image/gif'
+            elif ext == 'bmp':
+                contentType = 'image/bmp'
+            elif ext == 'tiff' or ext == 'tif':
+                contentType = 'image/tiff'
+            elif ext == 'svg':
+                contentType = 'image/svg+xml'
+            elif ext == 'webp':
+                contentType = 'image/webp'
+            elif ext == 'ico':
+                contentType = 'image/x-icon'
+            elif ext == 'eps':
+                contentType = 'image/eps'
+            # print('contentType: ', contentType)
+                    
+            img_key = folder+fname+'.'+ext
+            print('img_key: ', img_key)
+            
+            response = s3_client.put_object(
+                Bucket=s3_bucket,
+                Key=img_key,
+                ContentType=contentType,
+                Body=pixels
+            )
+            print('response: ', response)
+                            
+            # metadata
+            img_meta = { # not used yet
+                'bucket': s3_bucket,
+                'key': img_key,
+                'url': path+img_key,
+                'ext': 'png',
+                'original': key
+            }
+            print('img_meta: ', img_meta)
+                            
+            picture_count += 1
+                    
+            extracted_image_files.append(img_key)
+    
+    print('extracted_image_files: ', extracted_image_files)    
+    return extracted_image_files
              
 # load documents from s3 for pdf and txt
 def load_document(file_type, key):
@@ -497,17 +660,28 @@ def load_document(file_type, key):
         Byte_contents = doc.get()['Body'].read()
         
         try: 
+            # text
             reader = PyPDF2.PdfReader(BytesIO(Byte_contents))
             
             texts = []
             for page in reader.pages:
                 texts.append(page.extract_text())
             contents = '\n'.join(texts)
+            
+            # extract image file 
+            from pypdf import PdfReader
+            reader = PdfReader(BytesIO(Byte_contents))
+            
+            if enableImageExtraction == 'true':
+                image_files = extract_images_from_pdf(reader, key)                
+                for img in image_files:
+                    files.append(img)
+                    
         except Exception:
                 err_msg = traceback.format_exc()
                 print('err_msg: ', err_msg)
                 # raise Exception ("Not able to load the pdf file")
-                
+                     
     elif file_type == 'pptx':
         Byte_contents = doc.get()['Body'].read()
             
@@ -524,7 +698,7 @@ def load_document(file_type, key):
             contents = '\n'.join(texts)          
             
             if enableImageExtraction == 'true':
-                image_files = extract_images_from_ppt(prs, key)                
+                image_files = extract_images_from_pptx(prs, key)                
                 for img in image_files:
                     files.append(img)
                     
@@ -533,14 +707,6 @@ def load_document(file_type, key):
                 print('err_msg: ', err_msg)
                 # raise Exception ("Not able to load texts from preseation file")
         
-    elif file_type == 'txt' or file_type == 'md':       
-        try:  
-            contents = doc.get()['Body'].read().decode('utf-8')
-        except Exception:
-            err_msg = traceback.format_exc()
-            print('error message: ', err_msg)        
-            # raise Exception ("Not able to load the file")
-
     elif file_type == 'docx':
         try:
             Byte_contents = doc.get()['Body'].read()                    
@@ -553,10 +719,25 @@ def load_document(file_type, key):
                     # print(f"{i}: {para.text}")        
             contents = '\n'.join(texts)            
             # print('contents: ', contents)
+            
+            # Extract images
+            if enableImageExtraction == 'true':
+                image_files = extract_images_from_docx(doc_contents, key)                
+                for img in image_files:
+                    files.append(img)
+            
         except Exception:
                 err_msg = traceback.format_exc()
                 print('err_msg: ', err_msg)
                 # raise Exception ("Not able to load docx")   
+                
+    elif file_type == 'txt' or file_type == 'md':       
+        try:  
+            contents = doc.get()['Body'].read().decode('utf-8')
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)        
+            # raise Exception ("Not able to load the file")
     
     return contents, files
 
