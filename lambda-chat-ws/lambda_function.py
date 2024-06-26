@@ -901,7 +901,7 @@ def load_chat_history(userId, allowTime):
         msg = item['msg']['S']
         type = item['type']['S']
 
-        if type == 'text':
+        if type == 'text' and text and msg:
             memory_chain.chat_memory.add_user_message(text)
             if len(msg) > MSG_LENGTH:
                 memory_chain.chat_memory.add_ai_message(msg[:MSG_LENGTH])                          
