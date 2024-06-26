@@ -307,29 +307,17 @@ function onSend(e) {
         let requestId = uuidv4();
         addSentMessage(requestId, timestr, message.value);
         
-        if(conversationType=='qa-opensearch') {
+        if(conversationType=='qa-opensearch-vector') {
             type = "text",
-            conv_type = 'qa',
+            conv_type = 'qa-opensearch-vector',
             rag_type = 'opensearch',
             function_type = 'rag'
         }
-        else if(conversationType=='normal-claude3') {
+        else if(conversationType=='qa-opensearch-hybrid') {
             type = "text",
-            conv_type = 'normal',
-            rag_type = '',
-            function_type = 'normal-claude3'
-        }
-        else if(conversationType=='normal-claude2') {
-            type = "text",
-            conv_type = 'normal',
-            rag_type = '',
-            function_type = 'normal-claude2'
-        }
-        else if(conversationType=='normal-claude_instant') {
-            type = "text",
-            conv_type = 'normal',
-            rag_type = '',
-            function_type = 'normal-claude_instant'
+            conv_type = 'qa-opensearch-hybrid',
+            rag_type = 'opensearch',
+            function_type = 'rag'
         }
         else {
             type = "text",
@@ -667,12 +655,12 @@ attachFile.addEventListener('click', function(){
                                 conv_type = 'qa',
                                 rag_type = 'all'
                             }
-                            else if(conversationType=='qa-kendra') {
-                                conv_type = 'qa',
-                                rag_type = 'kendra'
+                            else if(conversationType=='qa-opensearch-os') {
+                                conv_type = 'qa-opensearch-vector',
+                                rag_type = 'opensearch'
                             }
-                            else if(conversationType=='qa-opensearch') {
-                                conv_type = 'qa',
+                            else if(conversationType=='qa-opensearch-hybrid') {
+                                conv_type = 'qa-opensearch-hybrid',
                                 rag_type = 'opensearch'
                             }
                             else if(conversationType=='qa-faiss') {

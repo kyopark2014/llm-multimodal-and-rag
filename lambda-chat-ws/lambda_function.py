@@ -56,6 +56,7 @@ LLM_for_multimodal= json.loads(os.environ.get('LLM_for_multimodal'))
 LLM_embedding = json.loads(os.environ.get('LLM_embedding'))
 priorty_search_embedding = json.loads(os.environ.get('priorty_search_embedding'))
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
+enableHybridSearch = os.environ.get('enableHybridSearch')
 
 selected_chat = 0
 selected_multimodal = 0
@@ -1191,7 +1192,204 @@ def retrieve_docs_from_vectorstore(vectorstore_opensearch, query, top_k):
         
     return relevant_docs
 
-def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding):
+def lexical_search(query, top_k):
+    relevant_docs = []
+    
+    # lexical search (keyword)
+    min_match = 0
+    query = {
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "text": {
+                                "query": query,
+                                "minimum_should_match": f'{min_match}%',
+                                "operator":  "or",
+                            }
+                        }
+                    },
+                ],
+                "filter": [
+                ]
+            }
+        }
+    }
+
+    response = os_client.search(
+        body=query,
+        index="idx-*", # all
+    )
+    # print('lexical query result: ', json.dumps(response))
+            
+    for i, document in enumerate(response['hits']['hits']):
+        if i>top_k: 
+            break
+                
+        excerpt = document['_source']['text']
+        print(f'## Document(opensearch-keyward) {i+1}: {excerpt}')
+
+        name = document['_source']['metadata']['name']
+        print('name: ', name)
+
+        page = ""
+        if "page" in document['_source']['metadata']:
+            page = document['_source']['metadata']['page']
+                
+        uri = ""
+        if "uri" in document['_source']['metadata']:
+            uri = document['_source']['metadata']['uri']
+        print('uri: ', uri)
+
+        confidence = str(document['_score'])
+        assessed_score = ""
+
+        if page:
+            print('page: ', page)
+            doc_info = {
+                "rag_type": 'opensearch-keyward',
+                "confidence": confidence,
+                "metadata": {
+                    "source": uri,
+                    "title": name,
+                    "excerpt": excerpt,
+                    "translated_excerpt": "",
+                    "document_attributes": {
+                        "_excerpt_page_number": page
+                    }
+                },
+                "assessed_score": assessed_score,
+            }
+        else: 
+            doc_info = {
+                "rag_type": 'opensearch-keyward',
+                "confidence": confidence,
+                "metadata": {
+                    "source": uri,
+                    "title": name,
+                    "excerpt": excerpt,
+                    "translated_excerpt": ""
+                },
+                "assessed_score": assessed_score,
+            }
+        relevant_docs.append(doc_info)
+
+    return relevant_docs    
+
+def vector_search(bedrock_embedding, query, top_k):
+    print(f"query: {query}")
+    
+    vectorstore_opensearch = OpenSearchVectorSearch(
+        index_name = "idx-*", # all
+        is_aoss = False,
+        ef_search = 1024, # 512(default)
+        m=48,
+        #engine="faiss",  # default: nmslib
+        embedding_function = bedrock_embedding,
+        opensearch_url=opensearch_url,
+        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
+    ) 
+
+    relevant_docs = []
+            
+    # vector search (semantic) 
+    if enalbeParentDocumentRetrival=='true':  # parent/child chunking
+        result = vectorstore_opensearch.similarity_search_with_score(
+            query = query,
+            k = top_k*2,  # use double
+            pre_filter={"doc_level": {"$eq": "child"}}
+        )
+        print('result: ', result)
+                
+        relevant_documents = []
+        docList = []
+        for re in result:
+            if 'parent_doc_id' in re[0].metadata:
+                parent_doc_id = re[0].metadata['parent_doc_id']
+                doc_level = re[0].metadata['doc_level']
+                print(f"doc_level: {doc_level}, parent_doc_id: {parent_doc_id}")
+                        
+                if doc_level == 'child':
+                    if parent_doc_id in docList:
+                        print('duplicated!')
+                    else:
+                        relevant_documents.append(re)
+                        docList.append(parent_doc_id)
+                        
+                        if len(relevant_documents)>=top_k:
+                            break
+                
+    else:  # single chunking
+        relevant_documents = vectorstore_opensearch.similarity_search_with_score(
+            query = query,
+            k = top_k,
+        )
+        #print('(opensearch score) relevant_documents: ', relevant_documents)
+        
+    for i, document in enumerate(relevant_documents):
+        #print('document.page_content:', document.page_content)
+        #print('document.metadata:', document.metadata)
+        print(f'## Document(opensearch-vector) {i+1}: {document}')
+
+        name = document[0].metadata['name']
+        # print('metadata: ', document[0].metadata)
+
+        page = ""
+        if "page" in document[0].metadata:
+            page = document[0].metadata['page']
+        uri = ""
+        if "uri" in document[0].metadata:
+            uri = document[0].metadata['uri']
+
+        excerpt = document[0].page_content
+        confidence = str(document[1])
+        assessed_score = str(document[1])
+        
+        parent_doc_id = doc_level = ""            
+        if enalbeParentDocumentRetrival == 'true':
+            parent_doc_id = document[0].metadata['parent_doc_id']
+            doc_level = document[0].metadata['doc_level']
+            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
+
+        if page:
+            print('page: ', page)
+            doc_info = {
+                "rag_type": 'opensearch-vector',
+                "confidence": confidence,
+                "metadata": {
+                    "source": uri,
+                    "title": name,
+                    "excerpt": excerpt,
+                    "translated_excerpt": "",
+                    "document_attributes": {
+                        "_excerpt_page_number": page
+                    },
+                    "parent_doc_id": parent_doc_id,
+                    "doc_level": doc_level  
+                },
+                "assessed_score": assessed_score,
+            }
+        else:
+            doc_info = {
+                "rag_type": 'opensearch-vector',
+                "confidence": confidence,
+                "metadata": {
+                    "source": uri,
+                    "title": name,
+                    "excerpt": excerpt,
+                    "translated_excerpt": "",
+                    "parent_doc_id": parent_doc_id,
+                    "doc_level": doc_level  
+                },
+                "assessed_score": assessed_score,
+            }
+        relevant_docs.append(doc_info)
+    
+        
+    return relevant_docs
+
+def get_answer_using_RAG(chat, text, search_type, connectionId, requestId, bedrock_embedding):
     global time_for_revise, time_for_rag, time_for_inference, time_for_priority_search, number_of_relevant_docs 
     time_for_revise = time_for_rag = time_for_inference = time_for_priority_search = number_of_relevant_docs = 0
     
@@ -1206,7 +1404,7 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
     print('processing time for revised question: ', time_for_revise)
     
     # retrieve relevant documents from RAG
-    selected_relevant_docs = retrieve_docs_from_RAG(text, connectionId, requestId, bedrock_embedding)
+    selected_relevant_docs = retrieve_docs_from_RAG(text, connectionId, requestId, bedrock_embedding, search_type)
     
     # get context
     relevant_context = ""
@@ -1239,26 +1437,19 @@ def get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock
 
     return msg, reference
     
-def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_embedding):
-    vectorstore_opensearch = OpenSearchVectorSearch(
-        index_name = "idx-*", # all
-        is_aoss = False,
-        ef_search = 1024, # 512(default)
-        m=48,
-        #engine="faiss",  # default: nmslib
-        embedding_function = bedrock_embedding,
-        opensearch_url=opensearch_url,
-        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
-    ) 
-         
-    relevant_docs = [] 
-    rel_docs = retrieve_docs_from_vectorstore(vectorstore_opensearch=vectorstore_opensearch, query=revised_question, top_k=top_k)
-    print(f'rel_docs: '+json.dumps(rel_docs))
-                
-    if(len(rel_docs)>=1):
-        for doc in rel_docs:
-            relevant_docs.append(doc)
-
+def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_embedding, search_type):
+    # vector search
+    rel_docs_opensearch = vector_search(bedrock_embedding=bedrock_embedding, query=revised_question, top_k=top_k)
+    print(f'rel_docs (vector): '+json.dumps(rel_docs_opensearch))
+    
+    if search_type == 'hybrid':
+        # lexical search
+        rel_docs_lexical_search = lexical_search(revised_question, top_k)    
+        print(f'rel_docs (lexical): '+json.dumps(rel_docs_lexical_search))
+        relevant_docs = rel_docs_opensearch + rel_docs_lexical_search
+    else:  # vector only
+        relevant_docs = rel_docs_opensearch    
+    
     if debugMessageMode=='true':
         for i, doc in enumerate(relevant_docs):
             print(f"#### relevant_docs ({i}): {json.dumps(doc)}")
@@ -1520,8 +1711,31 @@ def search_by_opensearch(keyword: str) -> str:
     answer = ""
     top_k = 2
     
-    if enalbeParentDocumentRetrival == 'true':
-        relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, keyword, top_k)
+    if enalbeParentDocumentRetrival == 'true': # parent/child chunking
+        result = vectorstore_opensearch.similarity_search_with_score(
+            query = keyword,
+            k = top_k*2,  # use double
+            pre_filter={"doc_level": {"$eq": "child"}}
+        )
+        print('result: ', result)
+                
+        relevant_documents = []
+        docList = []
+        for re in result:
+            if 'parent_doc_id' in re[0].metadata:
+                parent_doc_id = re[0].metadata['parent_doc_id']
+                doc_level = re[0].metadata['doc_level']
+                print(f"doc_level: {doc_level}, parent_doc_id: {parent_doc_id}")
+                        
+                if doc_level == 'child':
+                    if parent_doc_id in docList:
+                        print('duplicated!')
+                    else:
+                        relevant_documents.append(re)
+                        docList.append(parent_doc_id)
+                        
+                        if len(relevant_documents)>=top_k:
+                            break
 
         for i, document in enumerate(relevant_documents):
             print(f'## Document(opensearch-vector) {i+1}: {document}')
@@ -1824,10 +2038,16 @@ def getResponse(connectionId, jsonBody):
                     else:
                         msg = run_agent_react_chat(connectionId, requestId, chat, text)
                     
-                elif conv_type == 'qa':   # RAG
+                elif conv_type == 'qa-opensearch-vector':   # RAG - Vector
                     print(f'rag_type: {rag_type}')
-                    msg, reference = get_answer_using_RAG(chat, text, conv_type, connectionId, requestId, bedrock_embedding)
-                    
+                    search_type ='vector'
+                    msg, reference = get_answer_using_RAG(chat, text, search_type, connectionId, requestId, bedrock_embedding)
+                
+                elif conv_type == 'qa-opensearch-hybrid':   # RAG - Hybrid
+                    print(f'rag_type: {rag_type}')
+                    search_type = 'hybrid'
+                    msg, reference = get_answer_using_RAG(chat, text, search_type, connectionId, requestId, bedrock_embedding)
+                        
                 elif conv_type == 'translation':                    
                     msg = translate_text(chat, text)
                 
