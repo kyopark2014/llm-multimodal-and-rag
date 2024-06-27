@@ -39,6 +39,7 @@ const enableParallelSummay = 'true';
 const separated_chat_history = 'true';
 const enalbeParentDocumentRetrival = 'true';
 const enableImageExtraction = 'false';
+const enableHybridSearch = 'true';
 
 const claude3_sonnet = [
   {
@@ -635,7 +636,8 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
         googleApiSecret: googleApiSecret.secretName,
         projectName: projectName,
         separated_chat_history: separated_chat_history,
-        enalbeParentDocumentRetrival: enalbeParentDocumentRetrival    
+        enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
+        enableHybridSearch: enableHybridSearch
       }
     });     
     lambdaChatWebsocket.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));  
@@ -750,7 +752,8 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
           LLM_embedding: JSON.stringify(titan_embedding_v2),
           enableParallelSummay: enableParallelSummay,
           enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
-          enableImageExtraction: enableImageExtraction
+          enableImageExtraction: enableImageExtraction,
+          enableHybridSearch: enableHybridSearch
         }
       });         
       s3Bucket.grantReadWrite(lambdDocumentManager[i]); // permission for s3

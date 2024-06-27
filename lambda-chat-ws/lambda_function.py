@@ -1197,85 +1197,109 @@ def lexical_search(query, top_k):
     
     # lexical search (keyword)
     min_match = 0
-    query = {
-        "query": {
-            "bool": {
-                "must": [
-                    {
-                        "match": {
-                            "text": {
-                                "query": query,
-                                "minimum_should_match": f'{min_match}%',
-                                "operator":  "or",
+    if enableHybridSearch == 'true':
+        query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "match": {
+                                "text": {
+                                    "query": query,
+                                    "minimum_should_match": f'{min_match}%',
+                                    "operator":  "or",
+                                }
                             }
-                        }
-                    },
-                ],
-                "filter": [
-                ]
+                        },
+                    ],
+                    "filter": [
+                    ]
+                }
             }
         }
-    }
 
-    response = os_client.search(
-        body=query,
-        index="idx-*", # all
-    )
-    # print('lexical query result: ', json.dumps(response))
+        response = os_client.search(
+            body=query,
+            index="idx-*", # all
+        )
+        # print('lexical query result: ', json.dumps(response))
+        
+        docList = []   
+        for i, document in enumerate(response['hits']['hits']):
+            if i>top_k: 
+                break
+                    
+            excerpt = document['_source']['text']
+            print(f'## Document(opensearch-keyward) {i+1}: {excerpt}')
+
+            name = document['_source']['metadata']['name']
+            print('name: ', name)
+
+            page = ""
+            if "page" in document['_source']['metadata']:
+                page = document['_source']['metadata']['page']
+                    
+            uri = ""
+            if "uri" in document['_source']['metadata']:
+                uri = document['_source']['metadata']['uri']
+            print('uri: ', uri)
+
+            confidence = str(document['_score'])
+            assessed_score = ""
             
-    for i, document in enumerate(response['hits']['hits']):
-        if i>top_k: 
-            break
+            parent_doc_id = doc_level = ""            
+            if enalbeParentDocumentRetrival == 'true':
+                if 'parent_doc_id' in document['_source']['metadata']:
+                    parent_doc_id = document['_source']['metadata']['parent_doc_id']
+                if 'doc_level' in document['_source']['metadata']:
+                    doc_level = document['_source']['metadata']['doc_level']
                 
-        excerpt = document['_source']['text']
-        print(f'## Document(opensearch-keyward) {i+1}: {excerpt}')
+                if 'parent_doc_id' in document['_source']['metadata']:  # update            
+                    excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
+                    
+            if page:
+                print('page: ', page)
+                doc_info = {
+                    "rag_type": 'opensearch-keyward',
+                    "confidence": confidence,
+                    "metadata": {
+                        "source": uri,
+                        "title": name,
+                        "excerpt": excerpt,
+                        "translated_excerpt": "",
+                        "document_attributes": {
+                            "_excerpt_page_number": page
+                        },
+                        "parent_doc_id": parent_doc_id,
+                        "doc_level": doc_level  
+                    },
+                    "assessed_score": assessed_score,
+                }
+            else: 
+                doc_info = {
+                    "rag_type": 'opensearch-keyward',
+                    "confidence": confidence,
+                    "metadata": {
+                        "source": uri,
+                        "title": name,
+                        "excerpt": excerpt,
+                        "translated_excerpt": "",
+                        "parent_doc_id": parent_doc_id,
+                        "doc_level": doc_level  
+                    },
+                    "assessed_score": assessed_score,
+                }
+            
+            if parent_doc_id:  # parent doc
+                if parent_doc_id in docList:  # check duplication partially
+                    print('duplicated!')
+                else:
+                    relevant_docs.append(doc_info)
+                    docList.append(parent_doc_id)
+            else:  # child doc
+                relevant_docs.append(doc_info)
 
-        name = document['_source']['metadata']['name']
-        print('name: ', name)
-
-        page = ""
-        if "page" in document['_source']['metadata']:
-            page = document['_source']['metadata']['page']
-                
-        uri = ""
-        if "uri" in document['_source']['metadata']:
-            uri = document['_source']['metadata']['uri']
-        print('uri: ', uri)
-
-        confidence = str(document['_score'])
-        assessed_score = ""
-
-        if page:
-            print('page: ', page)
-            doc_info = {
-                "rag_type": 'opensearch-keyward',
-                "confidence": confidence,
-                "metadata": {
-                    "source": uri,
-                    "title": name,
-                    "excerpt": excerpt,
-                    "translated_excerpt": "",
-                    "document_attributes": {
-                        "_excerpt_page_number": page
-                    }
-                },
-                "assessed_score": assessed_score,
-            }
-        else: 
-            doc_info = {
-                "rag_type": 'opensearch-keyward',
-                "confidence": confidence,
-                "metadata": {
-                    "source": uri,
-                    "title": name,
-                    "excerpt": excerpt,
-                    "translated_excerpt": ""
-                },
-                "assessed_score": assessed_score,
-            }
-        relevant_docs.append(doc_info)
-
-    return relevant_docs    
+    return relevant_docs
 
 def vector_search(bedrock_embedding, query, top_k):
     print(f"query: {query}")
@@ -1446,19 +1470,25 @@ def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_em
         # lexical search
         rel_docs_lexical_search = lexical_search(revised_question, top_k)    
         print(f'rel_docs (lexical): '+json.dumps(rel_docs_lexical_search))
-        relevant_docs = rel_docs_opensearch + rel_docs_lexical_search
+        combined_docs = rel_docs_opensearch + rel_docs_lexical_search
     else:  # vector only
-        relevant_docs = rel_docs_opensearch    
+        combined_docs = rel_docs_opensearch    
     
-    if debugMessageMode=='true':
-        for i, doc in enumerate(relevant_docs):
-            print(f"#### relevant_docs ({i}): {json.dumps(doc)}")
-
+    # check duplication
+    docList = []
+    relevant_docs = []
+    for doc in combined_docs:        
+        print('excerpt: ', doc['metadata']['excerpt'])
+        if  doc['metadata']['excerpt'] in docList:
+            print('duplicated!')
+            continue        
+        docList.append( doc['metadata']['excerpt'])
+        relevant_docs.append(doc)
+    
+    for i, doc in enumerate(relevant_docs):
+        print(f"#### relevant_docs ({i}): {json.dumps(doc)}")
+    
     # priority search
-    global time_for_priority_search
-    time_for_priority_search = 0    
-    start_time_for_priority_search = time.time()
-    
     selected_relevant_docs = []
     if len(relevant_docs)>=1:
         print('start priority search')
