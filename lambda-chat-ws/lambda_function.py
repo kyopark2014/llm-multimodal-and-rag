@@ -991,7 +991,7 @@ def priority_search(query, relevant_docs, minSimilarity):
                 }
             )
         )  
-    print('excerpts: ', excerpts)
+    # print('excerpts: ', excerpts)
 
     embeddings = get_ps_embedding()
     vectorstore_confidence = FAISS.from_documents(
@@ -1000,7 +1000,8 @@ def priority_search(query, relevant_docs, minSimilarity):
     )            
     rel_documents = vectorstore_confidence.similarity_search_with_score(
         query=query,
-        k=top_k
+        # k=top_k
+        k=len(relevant_docs)
     )
 
     docs = []
@@ -1099,22 +1100,6 @@ os_client = OpenSearch(
     ssl_show_warn = False,
 )
 
-def get_parent_document(parent_doc_id):
-    response = os_client.get(
-        index="idx-rag", 
-        id = parent_doc_id
-    )
-    
-    source = response['_source']                            
-    # print('parent_doc: ', source['text'])   
-    
-    metadata = source['metadata']    
-    #print('name: ', metadata['name'])   
-    #print('uri: ', metadata['uri'])   
-    #print('doc_level: ', metadata['doc_level']) 
-    
-    return source['text'], metadata['name'], metadata['uri'], metadata['doc_level']    
-
 def retrieve_docs_from_vectorstore(vectorstore_opensearch, query, top_k):
     print(f"query: {query}")
 
@@ -1192,6 +1177,48 @@ def retrieve_docs_from_vectorstore(vectorstore_opensearch, query, top_k):
         
     return relevant_docs
 
+def get_parent_content(parent_doc_id):
+    if parent_doc_id:
+        response = os_client.get(
+            index="idx-rag", 
+            id = parent_doc_id
+        )
+            
+        source = response['_source']
+        print('excerpt: ', source['text'])   
+            
+        metadata = source['metadata']    
+        #print('name: ', metadata['name'])   
+        print('uri: ', metadata['uri'])   
+        #print('doc_level: ', metadata['doc_level']) 
+                    
+    return source['text'], metadata['uri']
+
+def get_parent_document(doc):
+    # print('doc: ', doc)
+    if 'parent_doc_id' in doc['metadata']:
+        parent_doc_id = doc['metadata']['parent_doc_id']
+    
+        if parent_doc_id:
+            response = os_client.get(
+                index="idx-rag", 
+                id = parent_doc_id
+            )
+            
+            #source = response['_source']
+            # print('parent_doc: ', source['text'])   
+            
+            #metadata = source['metadata']    
+            #print('name: ', metadata['name'])   
+            #print('uri: ', metadata['uri'])   
+            #print('doc_level: ', metadata['doc_level']) 
+            
+            print('text(before)', doc['metadata']['excerpt'])
+            doc['metadata']['excerpt'] = response['_source']['text']
+            print('text(after)', doc['metadata']['excerpt'])
+        
+    return doc
+
 def lexical_search(query, top_k):
     relevant_docs = []
     
@@ -1233,7 +1260,7 @@ def lexical_search(query, top_k):
             #print(f'## Document(opensearch-keyward) {i+1}: {excerpt}')
 
             name = document['_source']['metadata']['name']
-            print('name: ', name)
+            # print('name: ', name)
 
             page = ""
             if "page" in document['_source']['metadata']:
@@ -1242,21 +1269,19 @@ def lexical_search(query, top_k):
             uri = ""
             if "uri" in document['_source']['metadata']:
                 uri = document['_source']['metadata']['uri']
-            print('uri: ', uri)
+            # print('uri: ', uri)
 
             confidence = str(document['_score'])
             assessed_score = ""
             
-            parent_doc_id = doc_level = ""            
+            parent_doc_id = doc_level = ""
             if enalbeParentDocumentRetrival == 'true':
                 if 'parent_doc_id' in document['_source']['metadata']:
                     parent_doc_id = document['_source']['metadata']['parent_doc_id']
                 if 'doc_level' in document['_source']['metadata']:
                     doc_level = document['_source']['metadata']['doc_level']
+                print(f"doc_level: {doc_level}, parent_doc_id: {parent_doc_id}")
                 
-                if 'parent_doc_id' in document['_source']['metadata']:  # update            
-                    excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
-                    
             if page:
                 print('page: ', page)
                 doc_info = {
@@ -1291,7 +1316,7 @@ def lexical_search(query, top_k):
                 }
             
             if parent_doc_id:  # parent doc
-                if parent_doc_id in docList:  # check duplication partially
+                if parent_doc_id in docList:  # check duplication partially                    
                     print('duplicated!')
                 else:
                     relevant_docs.append(doc_info)
@@ -1324,7 +1349,7 @@ def vector_search(bedrock_embedding, query, top_k):
             k = top_k*2,  # use double
             pre_filter={"doc_level": {"$eq": "child"}}
         )
-        print('result: ', result)
+        print('result of opensearch: ', result)
                 
         relevant_documents = []
         docList = []
@@ -1341,8 +1366,8 @@ def vector_search(bedrock_embedding, query, top_k):
                         relevant_documents.append(re)
                         docList.append(parent_doc_id)
                         
-                        if len(relevant_documents)>=top_k:
-                            break
+                        #if len(relevant_documents)>=top_k:
+                        #    break
                 
     else:  # single chunking
         relevant_documents = vectorstore_opensearch.similarity_search_with_score(
@@ -1374,7 +1399,6 @@ def vector_search(bedrock_embedding, query, top_k):
         if enalbeParentDocumentRetrival == 'true':
             parent_doc_id = document[0].metadata['parent_doc_id']
             doc_level = document[0].metadata['doc_level']
-            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
 
         if page:
             print('page: ', page)
@@ -1462,32 +1486,22 @@ def get_answer_using_RAG(chat, text, search_type, connectionId, requestId, bedro
     
 def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_embedding, search_type):
     # vector search
-    rel_docs_opensearch = vector_search(bedrock_embedding=bedrock_embedding, query=revised_question, top_k=top_k)
-    print(f'rel_docs (vector): '+json.dumps(rel_docs_opensearch))
+    rel_docs_vector_search = vector_search(bedrock_embedding=bedrock_embedding, query=revised_question, top_k=top_k)
+    print(f'rel_docs (vector): '+json.dumps(rel_docs_vector_search))
     
     if search_type == 'hybrid':
         # lexical search
         rel_docs_lexical_search = lexical_search(revised_question, top_k)    
         print(f'rel_docs (lexical): '+json.dumps(rel_docs_lexical_search))
-        combined_docs = rel_docs_opensearch + rel_docs_lexical_search
+        relevant_docs = rel_docs_vector_search + rel_docs_lexical_search
     else:  # vector only
-        combined_docs = rel_docs_opensearch    
-    
-    # check duplication
-    docList = []
-    relevant_docs = []
-    for doc in combined_docs:        
-        print('excerpt: ', doc['metadata']['excerpt'])
-        if  doc['metadata']['excerpt'] in docList:
-            print('duplicated!')
-            continue        
-        docList.append( doc['metadata']['excerpt'])
-        relevant_docs.append(doc)
-    
-    for i, doc in enumerate(relevant_docs):
-        print(f"#### relevant_docs ({i}): {json.dumps(doc)}")
+        relevant_docs = rel_docs_vector_search    
     
     # priority search
+    global time_for_priority_search
+    time_for_priority_search = 0    
+    start_time_for_priority_search = time.time()
+    
     selected_relevant_docs = []
     if len(relevant_docs)>=1:
         print('start priority search')
@@ -1539,12 +1553,32 @@ def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_em
                 sendErrorMessage(connectionId, requestId, "Not able to use Google API. Check the credentials")    
                 #sendErrorMessage(connectionId, requestId, err_msg)    
                 #raise Exception ("Not able to search using google api") 
+
+    # update doc using parent
+    contentList = []
+    update_docs = []
+    for doc in selected_relevant_docs:        
+        doc = get_parent_document(doc) # use pareant document
+        
+        # print('excerpt: ', doc['metadata']['excerpt'])
+        if doc['metadata']['excerpt'] in contentList:
+            print('duplicated!')
+            continue
+        contentList.append(doc['metadata']['excerpt'])
+        update_docs.append(doc)
+        
+        if len(update_docs)>=top_k:
+            break
+    
+    print('update_docs:', json.dumps(update_docs))
+    #for i, doc in enumerate(update_docs):
+    #    print(f"#### relevant_docs ({i}): {json.dumps(update_docs)}")
                     
     end_time_for_priority_search = time.time() 
     time_for_priority_search = end_time_for_priority_search - start_time_for_priority_search
     print('processing time for priority search: ', time_for_priority_search)
     
-    return selected_relevant_docs
+    return update_docs
     
 def traslation(chat, text, input_language, output_language):
     system = (
@@ -1749,16 +1783,17 @@ def search_by_opensearch(keyword: str) -> str:
                         
                         if len(relevant_documents)>=top_k:
                             break
-
+                        
         for i, document in enumerate(relevant_documents):
             #print(f'## Document(opensearch-vector) {i+1}: {document}')
             
             parent_doc_id = document[0].metadata['parent_doc_id']
             doc_level = document[0].metadata['doc_level']
             print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
-                
-            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
-            print(f"parent: name: {name}, uri: {uri}, doc_level: {doc_level}")
+            
+            excerpt, uri = get_parent_content(parent_doc_id)
+            
+            print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, uri: {uri}, content: {excerpt}")
             
             answer = answer + f"{excerpt}, URL: {uri}\n\n"
     else: 
