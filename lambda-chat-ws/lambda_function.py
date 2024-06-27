@@ -1409,8 +1409,7 @@ def vector_search(bedrock_embedding, query, top_k):
                 "assessed_score": assessed_score,
             }
         relevant_docs.append(doc_info)
-    
-        
+            
     return relevant_docs
 
 def get_answer_using_RAG(chat, text, search_type, connectionId, requestId, bedrock_embedding):
@@ -1547,22 +1546,6 @@ def retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_em
     
     return selected_relevant_docs
     
-def get_profile(function_type):
-    claude3_sonnet = json.loads(os.environ.get('claude3_sonnet'))
-    claude2 = json.loads(os.environ.get('claude2'))
-    claude_instant = json.loads(os.environ.get('claude_instant'))
-
-    if function_type == 'normal-claude3':
-        profile_of_LLMs = claude3_sonnet
-    elif function_type == 'normal-claude2':
-        profile_of_LLMs = claude2
-    elif function_type == 'normal-claude_instant':
-        profile_of_LLMs = claude_instant
-    else:
-        profile_of_LLMs = json.loads(os.environ.get('profile_of_LLMs'))
-            
-    return profile_of_LLMs
-
 def traslation(chat, text, input_language, output_language):
     system = (
         "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
@@ -1964,8 +1947,6 @@ def getResponse(connectionId, jsonBody):
     # print('body: ', body)
     conv_type = jsonBody['conv_type']  # conversation type
     print('Conversation Type: ', conv_type)
-    function_type = jsonBody['function_type']  # conversation type
-    print('Function Type: ', function_type)
     
     rag_type = ""
     if 'rag_type' in jsonBody:
