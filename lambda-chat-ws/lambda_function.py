@@ -1253,7 +1253,7 @@ def lexical_search(query, top_k):
         
         docList = []   
         for i, document in enumerate(response['hits']['hits']):
-            if i>top_k: 
+            if i>=top_k: 
                 break
                     
             excerpt = document['_source']['text']
