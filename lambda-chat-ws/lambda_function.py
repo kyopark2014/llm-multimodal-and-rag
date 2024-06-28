@@ -1451,7 +1451,7 @@ def get_answer_using_RAG(chat, text, search_type, connectionId, requestId, bedro
     print('processing time for revised question: ', time_for_revise)
     
     # retrieve relevant documents from RAG
-    selected_relevant_docs = retrieve_docs_from_RAG(text, connectionId, requestId, bedrock_embedding, search_type)
+    selected_relevant_docs = retrieve_docs_from_RAG(revised_question, connectionId, requestId, bedrock_embedding, search_type)
     
     # get context
     relevant_context = ""
