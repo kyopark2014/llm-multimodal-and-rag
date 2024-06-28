@@ -1257,7 +1257,7 @@ def lexical_search(query, top_k):
                 break
                     
             excerpt = document['_source']['text']
-            #print(f'## Document(opensearch-keyward) {i+1}: {excerpt}')
+            #print(f'## Document(opensearch-keyword) {i+1}: {excerpt}')
 
             name = document['_source']['metadata']['name']
             # print('name: ', name)
@@ -1285,7 +1285,7 @@ def lexical_search(query, top_k):
             if page:
                 print('page: ', page)
                 doc_info = {
-                    "rag_type": 'opensearch-keyward',
+                    "rag_type": 'opensearch-keyword',
                     "confidence": confidence,
                     "metadata": {
                         "source": uri,
@@ -1302,7 +1302,7 @@ def lexical_search(query, top_k):
                 }
             else: 
                 doc_info = {
-                    "rag_type": 'opensearch-keyward',
+                    "rag_type": 'opensearch-keyword',
                     "confidence": confidence,
                     "metadata": {
                         "source": uri,
