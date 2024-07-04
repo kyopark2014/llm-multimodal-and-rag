@@ -613,12 +613,12 @@ attachFile.addEventListener('click', function(){
 
             let command = message.value;
             if(ext == 'png' || ext == 'jpeg' || ext == 'jpg') {
-                addSentMessageForSummary(requestId, timestr, message.value+"<br>"+"uploading the selected file in order to summerize...");
+                addSentMessageForSummary(requestId, timestr, message.value+"<br>"+"uploading the selected file in order to summarize...");
 
                 message.value = "";
             }
             else {
-                addSentMessageForSummary(requestId, timestr, "uploading the selected file in order to summerize...");
+                addSentMessageForSummary(requestId, timestr, "uploading the selected file in order to summarize...");
             }
             
             const uri = "upload";
