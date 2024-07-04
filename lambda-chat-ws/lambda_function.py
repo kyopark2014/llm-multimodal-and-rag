@@ -2186,11 +2186,11 @@ def getResponse(connectionId, jsonBody):
                 img.save(buffer, format="PNG")
                 img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
                 
-                commend  = jsonBody['commend']
-                print('commend: ', commend)
+                command  = jsonBody['command']
+                print('command: ', command)
                 
                 # verify the image
-                msg = use_multimodal(chat, img_base64, commend)       
+                msg = use_multimodal(chat, img_base64, command)       
                 
                 # extract text from the image
                 text = extract_text(chat, img_base64)
