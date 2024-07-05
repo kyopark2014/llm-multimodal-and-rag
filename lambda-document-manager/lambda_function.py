@@ -52,8 +52,10 @@ max_object_size = int(os.environ.get('max_object_size'))
 supportedFormat = json.loads(os.environ.get('supportedFormat'))
 print('supportedFormat: ', supportedFormat)
 
-enableImageExtraction = os.environ.get('enableImageExtraction')
 enableHybridSearch = os.environ.get('enableHybridSearch')
+
+enableImageExtraction = 'false'
+enablePageImageExraction = 'true'
 
 os_client = OpenSearch(
     hosts = [{
@@ -525,30 +527,34 @@ def add_to_opensearch(docs, key):
             #raise Exception ("Not able to add docs in opensearch")    
     return ids
     
-def extract_images_from_pdf(reader, key):
+def extract_images_from_docx(doc_contents, key):
     picture_count = 1
-    
     extracted_image_files = []
-    print('pages: ', len(reader.pages))
-    for i, page in enumerate(reader.pages):
-        print('page: ', page)
+    
+    for inline_shape in doc_contents.inline_shapes:
+        #print('inline_shape.type: ', inline_shape.type)                
+        if inline_shape.type == WD_INLINE_SHAPE_TYPE.PICTURE:
+            rId = inline_shape._inline.graphic.graphicData.pic.blipFill.blip.embed
+            print('rId: ', rId)
         
+            image_part = doc_contents.part.related_parts[rId]
         
-        for image_file_object in page.images:
-            print('image_file_object: ', image_file_object)        
-            #pixels = BytesIO(image_file_object.data)
+            filename = image_part.filename
+            print('filename: ', filename)
+        
+            bytes_of_image = image_part.image.blob
+            pixels = BytesIO(bytes_of_image)
+            pixels.seek(0, 0)
+                    
+            # get path from key
+            objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+            folder = s3_prefix+'/files/'+objectName+'/'
+            print('folder: ', folder)
             
-            img_name = image_file_object.name
-            print('img_name: ', img_name)
-            
-            if img_name in extracted_image_files:
-                print('skip....')
-                continue
-            
-            extracted_image_files.append(img_name)
-            # print('list: ', extracted_image_files)
-            
-            ext = img_name.split('.')[-1]            
+            fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{picture_count}"  
+            print('fname: ', fname)
+                            
+            ext = filename.split('.')[-1]            
             contentType = ""
             if ext == 'png':
                 contentType = 'image/png'
@@ -569,42 +575,31 @@ def extract_images_from_pdf(reader, key):
             elif ext == 'eps':
                 contentType = 'image/eps'
             # print('contentType: ', contentType)
-            
-            if contentType:                
-                image_bytes = image_file_object.data
-
-                pixels = BytesIO(image_bytes)
-                pixels.seek(0, 0)
-                            
-                # get path from key
-                objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
-                folder = s3_prefix+'/files/'+objectName+'/'
-                # print('folder: ', folder)
-                            
-                img_key = folder+img_name
-                
-                response = s3_client.put_object(
-                    Bucket=s3_bucket,
-                    Key=img_key,
-                    ContentType=contentType,
-                    Body=pixels
-                )
-                print('response: ', response)
-                            
-                # metadata
-                img_meta = {   # not used yet
-                    'bucket': s3_bucket,
-                    'key': img_key,
-                    'url': path+img_key,
-                    'ext': 'png',
-                    'page': i+1,
-                    'original': key
-                }
-                print('img_meta: ', img_meta)
-                            
-                picture_count += 1
                     
-                extracted_image_files.append(img_key)
+            img_key = folder+fname+'.'+ext
+            print('img_key: ', img_key)
+            
+            response = s3_client.put_object(
+                Bucket=s3_bucket,
+                Key=img_key,
+                ContentType=contentType,
+                Body=pixels
+            )
+            print('response: ', response)
+                            
+            # metadata
+            img_meta = { # not used yet
+                'bucket': s3_bucket,
+                'key': img_key,
+                'url': path+img_key,
+                'ext': 'png',
+                'original': key
+            }
+            print('img_meta: ', img_meta)
+                            
+            picture_count += 1
+                    
+            extracted_image_files.append(img_key)
     
     print('extracted_image_files: ', extracted_image_files)    
     return extracted_image_files
@@ -746,25 +741,111 @@ def load_document(file_type, key):
     contents = ""
     if file_type == 'pdf':
         Byte_contents = doc.get()['Body'].read()
-        
+
+        texts = []
+        nImages = []
         try: 
-            # text
-            reader = PyPDF2.PdfReader(BytesIO(Byte_contents))
-            
-            texts = []
-            for page in reader.pages:
-                texts.append(page.extract_text())
-            contents = '\n'.join(texts)
-            
-            # extract image file 
-            from pypdf import PdfReader
+            # pdf reader            
             reader = PdfReader(BytesIO(Byte_contents))
+            print('pages: ', len(reader.pages))
             
+            # extract text
+            for i, page in enumerate(reader.pages):
+                print(f"page[{i}]: {page}")
+                texts.append(page.extract_text())
+                
+                # annotation
+                #if '/Type' in page:
+                #    print(f"Type[{i}]: {page['/Type']}")                
+                #if '/Annots' in page:
+                #    print(f"Annots[{i}]: {page['/Annots']}")
+                #if '/Group' in page:
+                #    print(f"Group[{i}]: {page['/Group']}")
+                if '/Contents' in page:                
+                    print(f"Contents[{i}]: {page['/Contents']}")                    
+                #if '/MediaBox' in page:                
+                #    print(f"MediaBox[{i}]: {page['/MediaBox']}")                    
+                #if '/Parent' in page:
+                #    print(f"Parent[{i}]: {page['/Parent']}")
+                                
+                nImage = 0
+                if '/Resources' in page:
+                    print(f"Resources[{i}]: {page['/Resources']}")
+                    if '/ProcSet' in page['/Resources']:
+                        print(f"Resources/ProcSet[{i}]: {page['/Resources']['/ProcSet']}")
+                    if '/XObject' in page['/Resources']:
+                        print(f"Resources/XObject[{i}]: {page['/Resources']['/XObject']}")
+                        nImage = len(page['/Resources']['/XObject'])                
+                print(f"# of images of page[{i}] = {nImage}")
+                nImages.append(nImage)
+
+            contents = '\n'.join(texts)
+
+            # extract page images using PyMuPDF
+            if enablePageImageExraction=='true': 
+                pages = fitz.open(stream=Byte_contents, filetype='pdf')      
+            
+                picture_count = 1
+                for i, page in enumerate(pages):
+                    print('page: ', page)
+                    
+                    imgInfo = page.get_image_info()
+                    print(f"imgInfo[{i}]: ', {imgInfo}")         
+                    
+                    width = height = 0
+                    for j, info in enumerate(imgInfo):
+                        bbox = info['bbox']
+                        print(f"page[{i}] -> bbox[{j}]: {bbox}")
+                        if info['width']>width:
+                            width = info['width']
+                        if info['height']>height:
+                            height = info['height']
+                        print(f"page[{i}] -> width[{j}]: {width}, height[{j}]: {height}")
+                    
+                    print(f"nImages[{i}]: {nImages[i]}")  # number of XObjects
+                    if nImages[i] and \
+                        ((width==0 and height==0) or (width>=100 and height>=100)):
+                        # save current pdf page to image 
+                        pixmap = page.get_pixmap(dpi=200)  # dpi=300
+                        #pixels = pixmap.tobytes() # output: jpg
+                        
+                        # convert to png
+                        img = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+                        pixels = BytesIO()
+                        img.save(pixels, format='PNG')
+                        pixels.seek(0, 0)
+                                        
+                        # get path from key
+                        objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+                        folder = s3_prefix+'/captures/'+objectName+'/'
+                        print('folder: ', folder)
+                                
+                        fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{picture_count}"  
+                        print('fname: ', fname)          
+                        picture_count = picture_count+1          
+
+                        response = s3_client.put_object(
+                            Bucket=s3_bucket,
+                            Key=folder+fname+'.png',
+                            ContentType='image/png',
+                            Metadata = {
+                                "ext": 'png',
+                                "page": str(i+1)
+                            },
+                            Body=pixels
+                        )
+                        print('response: ', response)
+                                                        
+                        files.append(fname)
+                                    
+                contents = '\n'.join(texts)
+                
+            # extract image files   
             if enableImageExtraction == 'true':
-                image_files = extract_images_from_pdf(reader, key)                
+                image_files = extract_images_from_pdf(reader, key)
                 for img in image_files:
                     files.append(img)
-                    
+        
         except Exception:
                 err_msg = traceback.format_exc()
                 print('err_msg: ', err_msg)

@@ -38,7 +38,6 @@ const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default
 const enableParallelSummay = 'true';
 const separated_chat_history = 'true';
 const enalbeParentDocumentRetrival = 'true';
-const enableImageExtraction = 'false';
 const enableHybridSearch = 'true';
 
 const claude3_sonnet = [
@@ -752,7 +751,6 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
           LLM_embedding: JSON.stringify(titan_embedding_v2),
           enableParallelSummay: enableParallelSummay,
           enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
-          enableImageExtraction: enableImageExtraction,
           enableHybridSearch: enableHybridSearch
         }
       });         
