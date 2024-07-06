@@ -750,6 +750,7 @@ def load_document(file_type, key):
             print('pages: ', len(reader.pages))
             
             # extract text
+            imgList = []
             for i, page in enumerate(reader.pages):
                 print(f"page[{i}]: {page}")
                 texts.append(page.extract_text())
@@ -774,8 +775,19 @@ def load_document(file_type, key):
                     if '/ProcSet' in page['/Resources']:
                         print(f"Resources/ProcSet[{i}]: {page['/Resources']['/ProcSet']}")
                     if '/XObject' in page['/Resources']:
-                        print(f"Resources/XObject[{i}]: {page['/Resources']['/XObject']}")
-                        nImage = len(page['/Resources']['/XObject'])                
+                        print(f"Resources/XObject[{i}]: {page['/Resources']['/XObject']}")                        
+                        for j, image in enumerate(page['/Resources']['/XObject']):
+                            print(f"image[{j}]: {image}")                                 
+                            if image in imgList:
+                                print('Duplicated...')
+                                continue    
+                            else:
+                                imgList.append(image)
+                                                    
+                            Im = page['/Resources']['/XObject'][image]
+                            print(f"{image}[{j}]: {Im}")                            
+                            nImage = nImage+1
+                            
                 print(f"# of images of page[{i}] = {nImage}")
                 nImages.append(nImage)
 
@@ -785,26 +797,26 @@ def load_document(file_type, key):
             if enablePageImageExraction=='true': 
                 pages = fitz.open(stream=Byte_contents, filetype='pdf')      
             
-                picture_count = 1
                 for i, page in enumerate(pages):
                     print('page: ', page)
                     
                     imgInfo = page.get_image_info()
-                    print(f"imgInfo[{i}]: ', {imgInfo}")         
+                    print(f"imgInfo[{i}]: {imgInfo}")         
                     
                     width = height = 0
                     for j, info in enumerate(imgInfo):
                         bbox = info['bbox']
                         print(f"page[{i}] -> bbox[{j}]: {bbox}")
-                        if info['width']>width:
-                            width = info['width']
-                        if info['height']>height:
-                            height = info['height']
-                        print(f"page[{i}] -> width[{j}]: {width}, height[{j}]: {height}")
-                    
+                        if (bbox[2]-bbox[0]>width or bbox[3]-bbox[1]>height) and (bbox[2]-bbox[0]<940 and bbox[3]-bbox[1]<520):
+                            width = bbox[2]-bbox[0]
+                            height = bbox[3]-bbox[1]
+                            print(f"page[{i}] -> (used) width[{j}]: {bbox[2]-bbox[0]}, height[{j}]: {bbox[3]-bbox[1]}")                    
+                        print(f"page[{i}] -> (image) width[{j}]: {info['width']}, height[{j}]: {info['height']}")
+                        
                     print(f"nImages[{i}]: {nImages[i]}")  # number of XObjects
-                    if nImages[i] and \
-                        ((width==0 and height==0) or (width>=100 and height>=100)):
+                    if nImages[i]>=4 or \
+                        (nImages[i]>=1 and (width==0 and height==0)) or \
+                        (nImages[i]>=1 and (width>=100 or height>=100)):
                         # save current pdf page to image 
                         pixmap = page.get_pixmap(dpi=200)  # dpi=300
                         #pixels = pixmap.tobytes() # output: jpg
@@ -820,9 +832,8 @@ def load_document(file_type, key):
                         folder = s3_prefix+'/captures/'+objectName+'/'
                         print('folder: ', folder)
                                 
-                        fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{picture_count}"  
+                        fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{i}"
                         print('fname: ', fname)          
-                        picture_count = picture_count+1          
 
                         response = s3_client.put_object(
                             Bucket=s3_bucket,
@@ -830,13 +841,13 @@ def load_document(file_type, key):
                             ContentType='image/png',
                             Metadata = {
                                 "ext": 'png',
-                                "page": str(i+1)
+                                "page": str(i)
                             },
                             Body=pixels
                         )
                         print('response: ', response)
                                                         
-                        files.append(fname)
+                        files.append(folder+fname+'.png')
                                     
                 contents = '\n'.join(texts)
                 
