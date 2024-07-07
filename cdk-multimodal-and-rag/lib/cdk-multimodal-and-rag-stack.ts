@@ -54,7 +54,7 @@ const claude3_sonnet = [
     "maxOutputTokens": "4096"
   },
   {
-    "bedrock_region": "ca-central-1", // Canada
+    "bedrock_region": "ca-central-1", // Central(Canada)
     "model_type": "claude3",
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
     "maxOutputTokens": "4096"
@@ -67,6 +67,30 @@ const claude3_sonnet = [
   },
   {
     "bedrock_region": "sa-east-1", // Sao Paulo
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "maxOutputTokens": "4096"
+  },
+  {
+    "bedrock_region": "eu-central-1", // Frankfurt
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "maxOutputTokens": "4096"
+  },
+  {
+    "bedrock_region": "sa-south-1", // Mumbai
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "maxOutputTokens": "4096"
+  },
+  {
+    "bedrock_region": "sa-southeast-2", // sydney
+    "model_type": "claude3",
+    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "maxOutputTokens": "4096"
+  },
+  {
+    "bedrock_region": "eu-west-3", // paris
     "model_type": "claude3",
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
     "maxOutputTokens": "4096"
@@ -144,10 +168,16 @@ const titan_embedding_v2 = [
     "bedrock_region": "sa-east-1", // Sao Paulo
     "model_type": "titan",
     "model_id": "amazon.titan-embed-text-v2:0"
+  },
+  {
+    "bedrock_region": "eu-central-1", // Frankfurt
+    "model_type": "titan",
+    "model_id": "amazon.titan-embed-text-v2:0"
   }
 ];
 
 const LLM_embedding = titan_embedding_v2;
+const LLM_for_multimodal = claude3_sonnet;
 
 export class CdkMultimodalAndRagStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -695,7 +725,7 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
     // S3 - Lambda(S3 event) - SQS(fifo) - Lambda(document)
     // DLQ
     let dlq:any[] = [];
-    for(let i=0;i<LLM_embedding.length;i++) {
+    for(let i=0;i<LLM_for_multimodal.length;i++) {
       dlq[i] = new sqs.Queue(this, 'DlqS3EventFifo'+i, {
         visibilityTimeout: cdk.Duration.seconds(600),
         queueName: `dlq-s3-event-for-${projectName}-${i}.fifo`,  
@@ -709,7 +739,7 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
     // SQS for S3 event (fifo) 
     let queueUrl:string[] = [];
     let queue:any[] = [];
-    for(let i=0;i<LLM_embedding.length;i++) {
+    for(let i=0;i<LLM_for_multimodal.length;i++) {
       queue[i] = new sqs.Queue(this, 'QueueS3EventFifo'+i, {
         visibilityTimeout: cdk.Duration.seconds(600),
         queueName: `queue-s3-event-for-${projectName}-${i}.fifo`,  
@@ -735,16 +765,16 @@ export class CdkMultimodalAndRagStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(60),      
       environment: {
         sqsFifoUrl: JSON.stringify(queueUrl),
-        nqueue: String(LLM_embedding.length)
+        nqueue: String(LLM_for_multimodal.length)
       }
     });
-    for(let i=0;i<LLM_embedding.length;i++) {
+    for(let i=0;i<LLM_for_multimodal.length;i++) {
       queue[i].grantSendMessages(lambdaS3eventManager); // permision for SQS putItem
     }
 
     // Lambda for document manager
     let lambdDocumentManager:any[] = [];
-    for(let i=0;i<LLM_embedding.length;i++) {
+    for(let i=0;i<LLM_for_multimodal.length;i++) {
       lambdDocumentManager[i] = new lambda.DockerImageFunction(this, `lambda-document-manager-for-${projectName}-${i}`, {
         description: 'S3 document manager',
         functionName: `lambda-document-manager-for-${projectName}-${i}`,
