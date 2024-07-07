@@ -24,6 +24,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_aws import ChatBedrock
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from docx.enum.shape import WD_INLINE_SHAPE_TYPE
+from pypdf import PdfReader   
 
 sqs = boto3.client('sqs')
 s3_client = boto3.client('s3')  
