@@ -45,6 +45,7 @@ LLM_embedding = json.loads(os.environ.get('LLM_embedding'))
 selected_chat = 0
 selected_multimodal = 0
 selected_embedding = 0
+maxOutputTokens = 4096
 
 roleArn = os.environ.get('roleArn') 
 path = os.environ.get('path')
@@ -112,7 +113,6 @@ def get_chat():
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    maxOutputTokens = int(profile['maxOutputTokens'])
                           
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -152,7 +152,6 @@ def get_multimodal():
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'selected_multimodal: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    maxOutputTokens = int(profile['maxOutputTokens'])
                           
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -1058,7 +1057,7 @@ def check_supported_type(key, file_type, size):
 
 HUMAN_PROMPT = "\n\nHuman:"
 AI_PROMPT = "\n\nAssistant:"
-def get_parameter(model_type, maxOutputTokens):
+def get_parameter(model_type):
     if model_type=='titan': 
         return {
             "maxTokenCount":1024,
