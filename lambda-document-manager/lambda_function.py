@@ -5,6 +5,7 @@ import traceback
 import time
 import docx
 import base64
+import fitz
 
 from io import BytesIO
 from urllib import parse
