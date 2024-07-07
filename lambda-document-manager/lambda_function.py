@@ -2,7 +2,6 @@ import json
 import boto3
 import os
 import traceback
-import PyPDF2
 import time
 import docx
 import base64
