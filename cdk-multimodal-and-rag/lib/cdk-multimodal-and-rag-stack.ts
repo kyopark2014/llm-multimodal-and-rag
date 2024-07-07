@@ -110,7 +110,7 @@ const claude3_haiku = [
     "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
     "maxOutputTokens": "4096"
   },
-  {
+/*  {
     "bedrock_region": "ca-central-1", // Canada
     "model_type": "claude3",
     "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
@@ -127,7 +127,7 @@ const claude3_haiku = [
     "model_type": "claude3",
     "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
     "maxOutputTokens": "4096"
-  }
+  } */
 ];
 
 const titan_embedding_v1 = [
