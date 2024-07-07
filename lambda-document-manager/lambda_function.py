@@ -54,7 +54,7 @@ print('supportedFormat: ', supportedFormat)
 
 enableHybridSearch = os.environ.get('enableHybridSearch')
 
-enableImageExtraction = 'false'
+enableImageExtraction = 'true'
 enablePageImageExraction = 'true'
 
 os_client = OpenSearch(
@@ -526,6 +526,92 @@ def add_to_opensearch(docs, key):
             print('error message: ', err_msg)
             #raise Exception ("Not able to add docs in opensearch")    
     return ids
+
+def extract_images_from_pdf(reader, key):
+    picture_count = 1
+    
+    extracted_image_files = []
+    print('pages: ', len(reader.pages))
+    for i, page in enumerate(reader.pages):
+        print('page: ', page)
+        if '/ProcSet' in page['/Resources']:
+            print('Resources/ProcSet: ', page['/Resources']['/ProcSet'])        
+        if '/XObject' in page['/Resources']:
+            print(f"Resources/XObject[{i}]: {page['/Resources']['/XObject']}")
+        
+        for image_file_object in page.images:
+            print('image_file_object: ', image_file_object)
+            
+            img_name = image_file_object.name
+            print('img_name: ', img_name)
+            
+            if img_name in extracted_image_files:
+                print('skip....')
+                continue
+            
+            extracted_image_files.append(img_name)
+            # print('list: ', extracted_image_files)
+            
+            ext = img_name.split('.')[-1]            
+            contentType = ""
+            if ext == 'png':
+                contentType = 'image/png'
+            elif ext == 'jpg' or ext == 'jpeg':
+                contentType = 'image/jpeg'
+            elif ext == 'gif':
+                contentType = 'image/gif'
+            elif ext == 'bmp':
+                contentType = 'image/bmp'
+            elif ext == 'tiff' or ext == 'tif':
+                contentType = 'image/tiff'
+            elif ext == 'svg':
+                contentType = 'image/svg+xml'
+            elif ext == 'webp':
+                contentType = 'image/webp'
+            elif ext == 'ico':
+                contentType = 'image/x-icon'
+            elif ext == 'eps':
+                contentType = 'image/eps'
+            # print('contentType: ', contentType)
+            
+            if contentType:                
+                image_bytes = image_file_object.data
+
+                pixels = BytesIO(image_bytes)
+                pixels.seek(0, 0)
+                            
+                # get path from key
+                objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+                folder = s3_prefix+'/files/'+objectName+'/'
+                # print('folder: ', folder)
+                            
+                img_key = folder+img_name
+                
+                response = s3_client.put_object(
+                    Bucket=s3_bucket,
+                    Key=img_key,
+                    ContentType=contentType,
+                    Body=pixels
+                )
+                print('response: ', response)
+                            
+                # metadata
+                img_meta = {   # not used yet
+                    'bucket': s3_bucket,
+                    'key': img_key,
+                    'url': path+img_key,
+                    'ext': 'png',
+                    'page': i+1,
+                    'original': key
+                }
+                print('img_meta: ', img_meta)
+                            
+                picture_count += 1
+                    
+                extracted_image_files.append(img_key)
+
+    print('extracted_image_files: ', extracted_image_files)    
+    return extracted_image_files
     
 def extract_images_from_docx(doc_contents, key):
     picture_count = 1
@@ -851,8 +937,7 @@ def load_document(file_type, key):
                                     
                 contents = '\n'.join(texts)
                 
-            # extract image files   
-            if enableImageExtraction == 'true':
+            elif enableImageExtraction == 'true':
                 image_files = extract_images_from_pdf(reader, key)
                 for img in image_files:
                     files.append(img)
