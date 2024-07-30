@@ -828,7 +828,7 @@ def extract_images_from_docx(doc_contents, key):
     print('extracted_image_files: ', extracted_image_files)    
     return extracted_image_files
 
-def extract_table_image(page, index, bbox, key):
+def extract_table_image(page, index, table_count, bbox, key):
     pixmap_ori = page.get_pixmap()
     # print(f"width: {pixmap_ori.width}, height: {pixmap_ori.height}")
         
@@ -853,7 +853,7 @@ def extract_table_image(page, index, bbox, key):
     objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
     folder = s3_prefix+'/captures/'+objectName+'/'
                                 
-    fname = 'table_'+key.split('/')[-1].split('.')[0]+f"_{index}"
+    fname = 'table_'+key.split('/')[-1].split('.')[0]+f"_{table_count}"
 
     response = s3_client.put_object(
         Bucket=s3_bucket,
@@ -934,26 +934,30 @@ def load_document(file_type, key):
             pages = fitz.open(stream=Byte_contents, filetype='pdf')     
 
             # extract table data
+            table_count = 0
             for i, page in enumerate(pages):
                 page_tables = page.find_tables()
                 
                 if page_tables.tables:
-                    tab = page_tables[0]
-                    
-                    print(tab.to_markdown())    
-                    print(f"index: {i}")
-                    print(f"bounding box: {tab.bbox}")  # bounding box of the full table
-                    #print(f"top-left cell: {tab.cells[0]}")  # top-left cell
-                    #print(f"bottom-right cell: {tab.cells[-1]}")  # bottom-right cell
-                    print(f"row count: {tab.row_count}, column count: {tab.col_count}") # row and column counts
-                    print("\n\n")
-                    
-                    table_image = extract_table_image(page, i, tab.bbox, key)
-                    tables.append({
-                        "body": tab.to_markdown(),
-                        "name": table_image
-                    })                    
-                    files.append(table_image)
+                    print('page_tables.tables: ', len(page_tables.tables))
+
+                    for tab in page_tables.tables:    
+                        print(tab.to_markdown())    
+                        print(f"index: {i}")
+                        print(f"bounding box: {tab.bbox}")  # bounding box of the full table
+                        #print(f"top-left cell: {tab.cells[0]}")  # top-left cell
+                        #print(f"bottom-right cell: {tab.cells[-1]}")  # bottom-right cell
+                        print(f"row count: {tab.row_count}, column count: {tab.col_count}") # row and column counts
+                        print("\n\n")
+                        
+                        table_image = extract_table_image(page, i, table_count, tab.bbox, key)
+                        table_count += 1
+                        
+                        tables.append({
+                            "body": tab.to_markdown(),
+                            "name": table_image
+                        })                    
+                        files.append(table_image)
 
             # extract page images
             if enablePageImageExraction=='true': 
