@@ -228,7 +228,7 @@ vectorstore = OpenSearchVectorSearch(
 
 def store_document_for_opensearch(file_type, key):
     print('upload to opensearch: ', key) 
-    contents, files = load_document(file_type, key)
+    contents, files, tables = load_document(file_type, key)
     
     if len(contents) == 0:
         print('no contents: ', key)
@@ -237,18 +237,28 @@ def store_document_for_opensearch(file_type, key):
     # contents = str(contents).replace("\n"," ") 
     print('length: ', len(contents))
     
+    # text
     docs = []
     docs.append(Document(
         page_content=contents,
         metadata={
             'name': key,
-            # 'page':i+1,
             'uri': path+parse.quote(key)
         }
     ))
-    print('docs: ', docs)
     
-    ids = add_to_opensearch(docs, key)    
+    # table
+    for table in tables:
+        docs.append(Document(
+            page_content=table['body'],
+            metadata={
+                'name': table['name'],
+                'uri': path+parse.quote(table['name']),
+            }
+        ))            
+    print('docs: ', docs)
+
+    ids = add_to_opensearch(docs, key)
     
     return ids, files
 
@@ -817,13 +827,55 @@ def extract_images_from_docx(doc_contents, key):
     
     print('extracted_image_files: ', extracted_image_files)    
     return extracted_image_files
-             
+
+def extract_table_image(page, index, bbox, key):
+    pixmap_ori = page.get_pixmap()
+    # print(f"width: {pixmap_ori.width}, height: {pixmap_ori.height}")
+        
+    pixmap = page.get_pixmap(dpi=200)  # dpi=300
+    #pixels = pixmap.tobytes() # output: jpg
+    
+    # convert to png
+    img = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+    # print(f"width: {pixmap.width}, height: {pixmap.height}")
+    
+    rate_width = pixmap.width / pixmap_ori.width
+    rate_height = pixmap.height / pixmap_ori.height
+    # print(f"rate_width={rate_width}, rate_height={rate_height}")
+    
+    crop_img = img.crop((bbox[0]*rate_width, bbox[1]*rate_height, bbox[2]*rate_width, bbox[3]*rate_height))
+    
+    pixels = BytesIO()
+    crop_img.save(pixels, format='PNG')
+    pixels.seek(0, 0)
+
+    # get path from key
+    objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+    folder = s3_prefix+'/captures/'+objectName+'/'
+                                
+    fname = 'table_'+key.split('/')[-1].split('.')[0]+f"_{index}"
+
+    response = s3_client.put_object(
+        Bucket=s3_bucket,
+        Key=folder+fname+'.png',
+        ContentType='image/png',
+        Metadata = {
+            "ext": 'png',
+            "page": str(index)
+        },
+        Body=pixels
+    )
+    # print('response: ', response)
+    
+    return folder+fname+'.png'
+                 
 # load documents from s3 for pdf and txt
 def load_document(file_type, key):
     s3r = boto3.resource("s3")
     doc = s3r.Object(s3_bucket, key)
     
     files = []
+    tables = []
     contents = ""
     if file_type == 'pdf':
         Byte_contents = doc.get()['Body'].read()
@@ -878,11 +930,33 @@ def load_document(file_type, key):
                 nImages.append(nImage)
 
             contents = '\n'.join(texts)
-
-            # extract page images using PyMuPDF
-            if enablePageImageExraction=='true': 
-                pages = fitz.open(stream=Byte_contents, filetype='pdf')      
             
+            pages = fitz.open(stream=Byte_contents, filetype='pdf')     
+
+            # extract table data
+            for i, page in enumerate(pages):
+                page_tables = page.find_tables()
+                
+                if page_tables.tables:
+                    tab = page_tables[0]
+                    
+                    print(tab.to_markdown())    
+                    print(f"index: {i}")
+                    print(f"bounding box: {tab.bbox}")  # bounding box of the full table
+                    #print(f"top-left cell: {tab.cells[0]}")  # top-left cell
+                    #print(f"bottom-right cell: {tab.cells[-1]}")  # bottom-right cell
+                    print(f"row count: {tab.row_count}, column count: {tab.col_count}") # row and column counts
+                    print("\n\n")
+                    
+                    table_image = extract_table_image(page, i, tab.bbox, key)
+                    tables.append({
+                        "body": tab.to_markdown(),
+                        "name": table_image
+                    })                    
+                    files.append(table_image)
+
+            # extract page images
+            if enablePageImageExraction=='true': 
                 for i, page in enumerate(pages):
                     print('page: ', page)
                     
@@ -1004,7 +1078,7 @@ def load_document(file_type, key):
             print('error message: ', err_msg)        
             # raise Exception ("Not able to load the file")
     
-    return contents, files
+    return contents, files, tables
 
 # load a code file from s3
 def load_code(file_type, key):
