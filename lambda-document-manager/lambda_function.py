@@ -424,7 +424,7 @@ def create_nori_index():
                 },
                 'vector_field': {
                     'type': 'knn_vector',
-                    'dimension': 1536  # Replace with your vector dimension
+                    'dimension': 1024
                 }
             }
         }
