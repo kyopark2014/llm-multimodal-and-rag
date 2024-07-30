@@ -52,7 +52,7 @@ const claude3_sonnet = [
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
   },
   {
-    "bedrock_region": "ca-central-1", // Central(Canada)
+    "bedrock_region": "ca-central-1", // Canada
     "model_type": "claude3",
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
   },
@@ -63,26 +63,6 @@ const claude3_sonnet = [
   },
   {
     "bedrock_region": "sa-east-1", // Sao Paulo
-    "model_type": "claude3",
-    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-  },
-  {
-    "bedrock_region": "eu-central-1", // Frankfurt
-    "model_type": "claude3",
-    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-  },
-  {
-    "bedrock_region": "sa-south-1", // Mumbai
-    "model_type": "claude3",
-    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-  },
-  {
-    "bedrock_region": "sa-southeast-2", // sydney
-    "model_type": "claude3",
-    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-  },
-  {
-    "bedrock_region": "eu-west-3", // paris
     "model_type": "claude3",
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
   }
@@ -116,39 +96,34 @@ const claude3_haiku = [
   } */
 ];
 
-const titan_embedding_v1 = [
+const titan_embedding_v1 = [  // dimension = 1536
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "titan",
-    "model_id": "amazon.titan-embed-text-v1",
-    "dimension": "1536"
+    "model_id": "amazon.titan-embed-text-v1"
   },
   {
     "bedrock_region": "us-east-1", // N.Virginia
     "model_type": "titan",
-    "model_id": "amazon.titan-embed-text-v1",
-    "dimension": "1536"
+    "model_id": "amazon.titan-embed-text-v1"
   }
 ];
 
-const titan_embedding_v2 = [
+const titan_embedding_v2 = [  // dimension = 1024
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "titan",
-    "model_id": "amazon.titan-embed-text-v2:0",
-    "dimension": "1024"
+    "model_id": "amazon.titan-embed-text-v2:0"
   },
   {
     "bedrock_region": "us-east-1", // N.Virginia
     "model_type": "titan",
-    "model_id": "amazon.titan-embed-text-v2:0",
-    "dimension": "1024"
+    "model_id": "amazon.titan-embed-text-v2:0"
   },
   {
     "bedrock_region": "ca-central-1", // Canada
     "model_type": "titan",
-    "model_id": "amazon.titan-embed-text-v2:0",
-    "dimension": "1024"
+    "model_id": "amazon.titan-embed-text-v2:0"
   },
   {
     "bedrock_region": "eu-west-2", // London
@@ -158,14 +133,7 @@ const titan_embedding_v2 = [
   {
     "bedrock_region": "sa-east-1", // Sao Paulo
     "model_type": "titan",
-    "model_id": "amazon.titan-embed-text-v2:0",
-    "dimension": "1024"
-  },
-  {
-    "bedrock_region": "eu-central-1", // Frankfurt
-    "model_type": "titan",
-    "model_id": "amazon.titan-embed-text-v2:0",
-    "dimension": "1024"
+    "model_id": "amazon.titan-embed-text-v2:0"
   }
 ];
 
