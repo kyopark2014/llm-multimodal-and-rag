@@ -950,14 +950,15 @@ def load_document(file_type, key):
                         print(f"row count: {tab.row_count}, column count: {tab.col_count}") # row and column counts
                         print("\n\n")
                         
-                        table_image = extract_table_image(page, i, table_count, tab.bbox, key)
-                        table_count += 1
+                        if tab.row_count>=2:
+                            table_image = extract_table_image(page, i, table_count, tab.bbox, key)
+                            table_count += 1
                         
-                        tables.append({
-                            "body": tab.to_markdown(),
-                            "name": table_image
-                        })                    
-                        files.append(table_image)
+                            tables.append({
+                                "body": tab.to_markdown(),
+                                "name": table_image
+                            })                    
+                            files.append(table_image)
 
             # extract page images
             if enablePageImageExraction=='true': 
