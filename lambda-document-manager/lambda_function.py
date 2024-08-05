@@ -31,7 +31,7 @@ s3_client = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
 meta_prefix = "metadata/"
-enableParallelSummay = os.environ.get('enableParallelSummay')
+enableParallelSummary = os.environ.get('enableParallelSummary')
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 
 opensearch_account = os.environ.get('opensearch_account')
@@ -151,7 +151,7 @@ def get_multimodal():
     profile = LLM_for_multimodal[selected_multimodal]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    print(f'selected_multimodal: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    print(f'LLM: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
                           
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -265,7 +265,7 @@ def store_document_for_opensearch(file_type, key):
 def store_code_for_opensearch(file_type, key):
     codes = load_code(file_type, key)  # number of functions in the code
             
-    if enableParallelSummay=='true':
+    if enableParallelSummary=='true':
         docs = summarize_relevant_codes_using_parallel_processing(codes, key)
                                 
     else:
@@ -458,7 +458,7 @@ if enableHybridSearch == 'true':
 def add_to_opensearch(docs, key):    
     if len(docs) == 0:
         return []    
-    print('docs[0]: ', docs[0])       
+    #print('docs[0]: ', docs[0])       
     
     objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
     print('objectName: ', objectName)    
@@ -490,7 +490,7 @@ def add_to_opensearch(docs, key):
             
             for i, doc in enumerate(parent_docs):
                 doc.metadata["doc_level"] = "parent"
-                print(f"parent_docs[{i}]: {doc}")
+                # print(f"parent_docs[{i}]: {doc}")
                     
             try:        
                 parent_doc_ids = vectorstore.add_documents(parent_docs, bulk_size = 10000)
@@ -622,84 +622,7 @@ def extract_images_from_pdf(reader, key):
 
     print('extracted_image_files: ', extracted_image_files)    
     return extracted_image_files
-    
-def extract_images_from_docx(doc_contents, key):
-    picture_count = 1
-    extracted_image_files = []
-    
-    for inline_shape in doc_contents.inline_shapes:
-        #print('inline_shape.type: ', inline_shape.type)                
-        if inline_shape.type == WD_INLINE_SHAPE_TYPE.PICTURE:
-            rId = inline_shape._inline.graphic.graphicData.pic.blipFill.blip.embed
-            print('rId: ', rId)
         
-            image_part = doc_contents.part.related_parts[rId]
-        
-            filename = image_part.filename
-            print('filename: ', filename)
-        
-            bytes_of_image = image_part.image.blob
-            pixels = BytesIO(bytes_of_image)
-            pixels.seek(0, 0)
-                    
-            # get path from key
-            objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
-            folder = s3_prefix+'/files/'+objectName+'/'
-            print('folder: ', folder)
-            
-            fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{picture_count}"  
-            print('fname: ', fname)
-                            
-            ext = filename.split('.')[-1]            
-            contentType = ""
-            if ext == 'png':
-                contentType = 'image/png'
-            elif ext == 'jpg' or ext == 'jpeg':
-                contentType = 'image/jpeg'
-            elif ext == 'gif':
-                contentType = 'image/gif'
-            elif ext == 'bmp':
-                contentType = 'image/bmp'
-            elif ext == 'tiff' or ext == 'tif':
-                contentType = 'image/tiff'
-            elif ext == 'svg':
-                contentType = 'image/svg+xml'
-            elif ext == 'webp':
-                contentType = 'image/webp'
-            elif ext == 'ico':
-                contentType = 'image/x-icon'
-            elif ext == 'eps':
-                contentType = 'image/eps'
-            # print('contentType: ', contentType)
-                    
-            img_key = folder+fname+'.'+ext
-            print('img_key: ', img_key)
-            
-            response = s3_client.put_object(
-                Bucket=s3_bucket,
-                Key=img_key,
-                ContentType=contentType,
-                Body=pixels
-            )
-            print('response: ', response)
-                            
-            # metadata
-            img_meta = { # not used yet
-                'bucket': s3_bucket,
-                'key': img_key,
-                'url': path+img_key,
-                'ext': 'png',
-                'original': key
-            }
-            print('img_meta: ', img_meta)
-                            
-            picture_count += 1
-                    
-            extracted_image_files.append(img_key)
-    
-    print('extracted_image_files: ', extracted_image_files)    
-    return extracted_image_files
-    
 def extract_images_from_pptx(prs, key):
     picture_count = 1
     

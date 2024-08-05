@@ -1028,7 +1028,8 @@ def get_reference(docs):
         else:
             excerpt = str(doc['metadata']['excerpt']).replace('"'," ")
             
-        excerpt = excerpt.replace('\n','\\n')            
+        excerpt = excerpt.replace('\n','\\n')           
+        excerpt = excerpt.encode(encoding='UTF-8', errors='ignore') 
                 
         if doc['rag_type'][:10] == 'opensearch':
             #print(f'## Document(get_reference) {i+1}: {doc}')
