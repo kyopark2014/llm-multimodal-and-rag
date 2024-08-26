@@ -88,6 +88,55 @@ class OpenSearchLexicalSearchRetriever(BaseRetriever):
         return results[:self.k]
 ```
 
+## LangChain으로 Hybrid Search 구현하기
+
+[LangChain을 통한 Hybrid Search 구현 방법](https://medium.com/@nuatmochoi/%ED%95%98%EC%9D%B4%EB%B8%8C%EB%A6%AC%EB%93%9C-%EA%B2%80%EC%83%89-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0-feat-ensembleretriever-knowledge-bases-for-amazon-bedrock-d6ef1a0daaf1)을 참조하여 아래와 같이 Hybrid Search를 구현합니다.
+
+```python
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.vectorstores import OpenSearchVectorSearch
+
+vector_db = OpenSearchVectorSearch(
+            index_name=index_name,
+            opensearch_url=oss_endpoint,
+            embedding_function=embeddings,
+            http_auth=http_auth, 
+            is_aoss =False,
+            engine="faiss",
+            space_type="l2"
+        )
+
+# Sementic Retriever(유사도 검색, 3개의 결과값 반환)
+opensearch_semantic_retriever = vector_db.as_retriever(
+    search_type="similarity",
+    search_kwargs={
+        "k": 3
+    }
+)
+
+search_semantic_result = opensearch_semantic_retriever.get_relevant_documents(query)
+
+opensearch_lexical_retriever = OpenSearchLexicalSearchRetriever(
+    os_client=os_client,
+    index_name=index_name
+)
+
+# Lexical Retriever(키워드 검색, 3개의 결과값 반환)
+opensearch_lexical_retriever.update_search_params(
+    k=3,
+    minimum_should_match=0
+)
+
+search_keyword_result = opensearch_lexical_retriever.get_relevant_documents(query)
+
+# Ensemble Retriever(앙상블 검색)
+ensemble_retriever = EnsembleRetriever(
+    retrievers=[opensearch_lexical_retriever, opensearch_semantic_retriever],
+    weights=[0.50, 0.50]
+)
+
+search_hybrid_result = ensemble_retriever.get_relevant_documents(query)
+```
 
 
 
