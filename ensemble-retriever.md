@@ -138,7 +138,127 @@ ensemble_retriever = EnsembleRetriever(
 search_hybrid_result = ensemble_retriever.get_relevant_documents(query)
 ```
 
-## Reference
+
 
 [Using langchain for Question Answering on Own Data](https://medium.com/@onkarmishra/using-langchain-for-question-answering-on-own-data-3af0a82789ed)
 
+
+```python
+
+from langchain.schema import BaseRetriever
+from langchain.callbacks.manager import CallbackManagerForRetrieverRun
+from typing import Any
+# https://github.com/aws-samples/aws-ai-ml-workshop-kr/blob/master/genai/aws-gen-ai-kr/utils/rag.py
+class OpenSearchLexicalSearchRetriever(BaseRetriever):
+    os_client: Any
+    index_name: str
+    k = 3
+    minimum_should_match = 0
+    filter = []
+
+    def normalize_search_results(self, search_results):
+        hits = (search_results["hits"]["hits"])
+        max_score = float(search_results["hits"]["max_score"])
+        
+        for hit in hits:
+            hit["_score"] = float(hit["_score"]) / max_score
+        
+        search_results["hits"]["max_score"] = hits[0]["_score"]
+        search_results["hits"]["hits"] = hits
+        
+        return search_results
+
+    def update_search_params(self, **kwargs):
+        self.k = kwargs.get("k", 3)
+        self.minimum_should_match = kwargs.get("minimum_should_match", 0)
+        self.filter = kwargs.get("filter", [])
+        self.index_name = kwargs.get("index_name", self.index_name)
+
+    def _reset_search_params(self, ):
+        self.k = 3
+        self.minimum_should_match = 0
+        self.filter = []
+
+    def query_lexical(self, query, filter=[], k=5):
+        QUERY_TEMPLATE = {
+            "size": k,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "match": {
+                                "text": {
+                                    "query": query,
+                                    "operator":  "or"
+                                }
+                            }
+                        }
+                    ],
+                    "filter": filter
+                }
+            }
+        }
+        
+        if len(filter) > 0:
+            QUERY_TEMPLATE["query"]["bool"]["filter"].extend(filter)
+            
+        return QUERY_TEMPLATE
+    
+    def _get_relevant_documents(
+        self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> List[Document]:
+
+        query = self.query_lexical(
+            query=query,
+            minimum_should_match=self.minimum_should_match,
+            filter=self.filter
+        )
+        query["size"] = self.k
+
+        print ("lexical search query: ", query)
+
+        search_results = self.os_client.search(
+            body=query,
+            index=self.index_name
+        )
+
+        results = []
+        if search_results["hits"]["hits"]:
+            search_results = self.normalize_search_results(search_results)
+            for res in search_results["hits"]["hits"]:
+
+                metadata = res["_source"]["metadata"]
+                metadata["id"] = res["_id"]
+
+                doc = Document(
+                    page_content=res["_source"]["text"],
+                    metadata=metadata
+                )
+                results.append((doc))
+
+        self._reset_search_params()
+
+        return results[:self.k]
+
+# https://github.com/kyopark2014/llm-multimodal-and-rag/blob/main/ensemble-retriever.md
+from langchain.retrievers import EnsembleRetriever
+def get_relevant_by_ensemble_search(query, index_name, boolean_filter, vectorstore_opensearch)
+    opensearch_semantic_retriever = vectorstore_opensearch.as_retriever(
+        search_type="similarity",
+        search_kwargs={
+            "k": 3
+        }
+    )
+    opensearch_lexical_retriever = OpenSearchLexicalSearchRetriever(
+        os_client=os_client,
+        index_name=index_name,
+        k=3,
+        filter=boolean_filter
+    )    
+    ensemble_retriever = EnsembleRetriever(
+        retrievers=[opensearch_lexical_retriever, opensearch_semantic_retriever],
+        weights=[0.50, 0.50]
+    )
+    search_hybrid_result = ensemble_retriever.get_relevant_documents(query)
+    
+    return search_hybrid_result
+```
