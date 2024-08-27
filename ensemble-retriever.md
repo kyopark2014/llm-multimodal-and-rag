@@ -138,5 +138,7 @@ ensemble_retriever = EnsembleRetriever(
 search_hybrid_result = ensemble_retriever.get_relevant_documents(query)
 ```
 
+## Reference
 
+[Using langchain for Question Answering on Own Data](https://medium.com/@onkarmishra/using-langchain-for-question-answering-on-own-data-3af0a82789ed)
 
