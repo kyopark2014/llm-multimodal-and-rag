@@ -1029,7 +1029,6 @@ def get_reference(docs):
             excerpt = str(doc['metadata']['excerpt']).replace('"'," ")
             
         excerpt = excerpt.replace('\n','\\n')           
-        excerpt = excerpt.encode(encoding='UTF-8', errors='ignore') 
                 
         if doc['rag_type'][:10] == 'opensearch':
             #print(f'## Document(get_reference) {i+1}: {doc}')
@@ -1060,7 +1059,8 @@ def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
     result = vectorstore_opensearch.similarity_search_with_score(
         query = query,
         k = top_k*2,  
-        pre_filter={"doc_level": {"$eq": "child"}}
+        search_type="script_scoring",
+        pre_filter={"term": {"metadata.doc_level": "child"}}
     )
     print('result: ', result)
             
@@ -1347,7 +1347,8 @@ def vector_search(bedrock_embedding, query, top_k):
         result = vectorstore_opensearch.similarity_search_with_score(
             query = query,
             k = top_k*2,  # use double
-            pre_filter={"doc_level": {"$eq": "child"}}
+            search_type="script_scoring",
+            pre_filter={"term": {"metadata.doc_level": "child"}}
         )
         print('result of opensearch: ', result)
                 
@@ -1762,7 +1763,8 @@ def search_by_opensearch(keyword: str) -> str:
         result = vectorstore_opensearch.similarity_search_with_score(
             query = keyword,
             k = top_k*2,  # use double
-            pre_filter={"doc_level": {"$eq": "child"}}
+            search_type="script_scoring",
+            pre_filter={"term": {"metadata.doc_level": "child"}}
         )
         print('result: ', result)
                 
